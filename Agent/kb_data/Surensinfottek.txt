@@ -1,0 +1,636 @@
+Basic Information
+Company Name: Surens Inffotek
+
+Founded: Approximately 2016 (6+ years of service as of 2022)
+
+Focus Areas: QA (Quality Assurance) and RPA (Robotic Process Automation)
+
+Company Type: Technology solutions provider with technical architects as founders
+
+Approach: High-quality solutions considering future maintenance, continuous improvement through best practices and standard processes
+
+Contact Information
+Primary Contact
+Address: Plot No. 32, Gachibowli Miyapur Rd, Hyderabad, India
+
+Phone: +91-98458-20345 / +91-984-582-0345
+
+Email: contact@surensinffotek.com
+
+Brochure: https://surensinffotek.com/wp-content/uploads/2025/08/Broachure.pdf
+
+Business Hours
+Week Days (Mon-Thu): 08:00 - 10:00 / 09:00 to 18:00 (multiple listings)
+
+Friday: 09:00 - 07:00
+
+Saturday: 10:00 - 05:00
+
+Sunday: 10:00 - 05:00 / Closed (multiple listings)
+
+Social Media
+Facebook: https://www.facebook.com/surensinffotekindia
+
+Twitter: https://twitter.com/surensinffotek
+
+LinkedIn: https://www.linkedin.com/company/surensinffotekindia/mycompany/
+
+YouTube: https://www.youtube.com/channel/UCZB8KXoK0GzQ9wxAtORaO_g/videos
+
+Company Mission & Vision
+Empowering the Future with AI & Automation
+
+Core mission: Enhance Productivity, Process Efficiency, Performance, and Work-Life Balance
+
+Help organizations accelerate digital transformation with intelligent, future-ready technologies
+
+Service Areas
+1. Artificial Intelligence (AI) Services
+Definition: Artificial intelligence (AI) is a wide-ranging branch of computer science concerned with building smart machines capable of performing tasks that typically require human intelligence.
+
+AI Types:
+
+Reactive Machines
+
+Limited Memory
+
+Theory of Mind
+
+Self-Awareness
+
+AI Service Categories:
+
+AI Consulting: Technical Evaluation, Develop strategy & Road map
+
+AI/ML Services (Data Analytics): Machine Learning, Deep Learning, Data Mining, Predictive Analytics, Sentiment Analysis, Anomaly Detection, Statistical Modeling Visualization
+
+Voice Analytics: Speech Recognition, Voice to text, Voice analysis
+
+Image Analytics: Image Tagging, Optical Character Recognition, Face/Object Detection, Object Tracking, Image processing
+
+Intelligent Chatbots: Customer/Technical Support chatbots, AI chatbots, Conversational Chatbots, Voice chatbots
+
+AI/ML Testing: Testing Plan, Test cases development, Test execution, Reporting
+
+AI/ML Staff outsourcing: Expert AI/ML/CV/NLP/Python developers, Short term & Long term skilled resource deployment
+
+AI Differentiators:
+
+30+ Customers
+
+High Skilled Professionals
+
+High Quality: Independent AI testing team
+
+Focus: High Executive Focus
+
+Software: Open Source & Commercial software
+
+Centre of Excellence: R&D, Assets, Knowledge Base
+
+2. Robotic Process Automation (RPA)
+Definition: Using software robots that are easy to configure, require little IT expertise and that are simple to train and deploy, RPA speeds up processing and reduces error rates by automating manual tasks.
+
+RPA Service Categories:
+
+Consulting: Develop strategy & Road map, Implement RPA Process, Proof of concept Development (PoC/MVP), Identify suitable tools
+
+Bots Development: Identify suitable processes, Develop the bots, Scheduling Bots & Orchestration
+
+Independent Bots Testing: Author Positive & Negative test case, Test execution, Test reporting
+
+24*7 Support: Bots maintenance, 24*7 support for deployed bots
+
+RPA Bots Migration: Understand Existing Bots, Define Migration strategy, Migrate bots between software
+
+RPA Differentiators:
+
+100% Certified RPA Developers
+
+300+ Bots across industries (banking, finance, etc.)
+
+120+ Process Asset Library templates
+
+Vast experience in building bots
+
+Open Source bot Expertise
+
+Independent bot testing team
+
+High Executive Focus
+
+Library-frameworks, reusable scripts
+
+Multi Tools Experience
+
+RPA Migration Expertise
+
+3. Quality Assurance (QA)
+Definition: Software Quality Assurance and Engineering with diverse experience in Software Assurance & Engineering and expertise in technologies like AI, Machine Learning, DevOps, and Automation.
+
+QA Service Categories:
+
+Consulting: Develop strategy & Road map, Setting up QA Center of Excellence (CoE), Tool evaluations & Recommendations, Proof of concept Development (PoC/MVP)
+
+Functional/Manual/Domain Led Testing: Domain/Business Assurance Testing (BFSI, Retail, E-Com, Healthcare, SAP, etc.), Test case design & development, Test Metrics Dashboard & Defect RCA, AI based Test analytics
+
+Automation Testing: Ready to Deploy Frameworks (Selenium, Protractor, BDD, TDD, NightWatch.Js, TestComplete, UFT, etc.), Script Development (Open Source & Commercial) & Maintenance, Continuous Integration & Continuous Delivery (DevOps), Customised Reports (Extent/Allure/Serenity/HTML), Orchestration with Kubernetes/Docker
+
+Mobile Application Testing: Ready to use Android & iOS test case pack (200+), Ready to Deploy Frameworks (Open Source & Commercial), Functional, Non Functional, Multi Device/Version testing, Management Dashboards
+
+Performance Testing: Ready to deploy frameworks & accelerators, Load/Stress/Endurance Testing, Performance Engineering, Performance Monitoring & analytics
+
+Security/Penetration Testing: Ready to use OWASP based test cases (250+), Vulnerability Scanning, Static Analysis, Dynamic Analysis
+
+QA Staff outsourcing: Expert testers/SDET as per requirement, Short term & Long term skilled resource deployment
+
+QA Differentiators:
+
+20+ Ready to deploy Frameworks
+
+Security Test cases (250+): Ready to use OWASP based test cases
+
+Mobile Test cases (120+): Ready to use Android & iOS test case pack
+
+Migration Expertise
+
+Test Analytics: ML based test analytics
+
+Free – PoC: Proof of concept (MVP) @ FREE of cost
+
+SME's: We are SME's not QA's
+
+Matured Processes Reports: Multi language/technologies test reports
+
+4. Industry 4.0
+Definition: End‑to‑End Services for Smart Manufacturing built on AI Center of Excellence, bringing consulting, product engineering and managed services together to deliver measurable impact on yield, throughput and cost.
+
+Industry 4.0 Offerings:
+
+Consulting & Strategy: AI adoption roadmaps & value discovery, Business process automation consulting, Data strategy & AI readiness assessment, Custom solution design for shop‑floor & enterprise, LLM testing & validation strategies
+
+AI‑Powered Software Development: Custom AI/ML models (predictive maintenance, demand forecasting, QA), Integration with MES/ERP/SCADA, End‑to‑end AI application development, Custom GPTs & virtual assistants (operator guidance, safety), Document processing & AI‑powered knowledge search, Vision AI (defect detection, classification, traceability)
+
+LLM Services: Custom LLM development & fine‑tuning, Instruction‑tuning for task‑specific performance, RAG pipelines for technical docs & maintenance support, Enterprise LLM solutions with governance & observability
+
+Data Intelligence: Production analytics & OEE dashboards, Performance & energy analytics, Maintenance analytics (predictive & prescriptive), Quality analytics & SPC, Executive KPI boards
+
+Co‑Innovation & CoE: Research on technology & market trends, Use‑case discovery, solution definition, PoCs & pilots with impact analysis, Partner ecosystem acceleration
+
+Managed Services: Operations transition & service model setup, SLA definition, compliance & reporting, 24×7 operations monitoring, Continuous improvement & cost optimization
+
+AI Agents
+Definition: AI agents are intelligent systems capable of perceiving their environment, making decisions, and taking autonomous actions to achieve specific goals. Unlike traditional software, they can learn and adapt, making them powerful tools for complex problem-solving across various industries.
+
+Industries Served for AI Agents:
+
+Automotive Industry
+
+Financial sector
+
+Retail industry
+
+Life sciences sector
+
+Telecom sector
+
+Aerospace & Aviation
+
+Healthcare & Hospitals
+
+Manufacturing & Industrial
+
+Agriculture & Agritech
+
+Education & EdTech
+
+Logistics & Supply Chain
+
+Energy & Utilities
+
+Media & Entertainment
+
+Tourism & Hospitality
+
+Real Estate & Smart Cities
+
+Legal & Compliance
+
+Public Sector/Government
+
+Defense & Security
+
+Mining & Resources
+
+Industry Use Cases
+AI Use Cases by Industry:
+Manufacturing:
+Material Handling: AI-powered robotics provide proper handling of materials, test performances, and packing finished products
+
+AI Application in Quality Control: AI-powered machines detect defects more accurately than humans
+
+Estimates device failure: Predictive maintenance systems predict device damage and prevent accidental shutdowns
+
+Digital twins: Virtually monitor production environment
+
+Supply-chain management: Establishes communication channels, Warehouse management & logistics, Development of autonomous vehicles for logistics
+
+Customer Management: Quick response, personalized experience, Improved relations using CRM tool
+
+Predictive Maintenance: Leverages real-time data to find core issues
+
+Robotics: Collaboration of smart robots reduces potential risks to human lives
+
+Customer Service:
+Social Listening & Ticketing: Uses social network data to discover whom to sell and what to sell
+
+Intelligent Call Routing: Delivers correct service with right agent based on customer profile and agent performance
+
+Call Classification: Leverages NLP to recognize what buyer wants to achieve
+
+Agriculture:
+Enabling better decision-making: Analyzing market demand, estimating prices, determining right time for harvesting
+
+Cost Reduction: Precision farming combines soil management, variable rate technology and data management
+
+Solves labor shortages: Driverless tractors, AI-based robots for smart irrigation and fertilizing
+
+Early detection of pests, disease, and weeds: CNN detects onset of disease by observing leaf discoloration
+
+Precision agriculture: Detects conditions like soil moisture, light, humidity and temperature
+
+Healthcare:
+Predictive analytics to validate need for surgery: Assists doctors to evaluate whether operation is necessary
+
+Machine learning to diagnose infectious disease: Tracks genetic testing
+
+Healthcare apps as medical assistants: Helps patients in day-to-day care
+
+AI-powered wearables track health conditions: Suggests medication, exercise, activities
+
+Early detection of dementia: Compares patient responses to validate accuracy, speed, and image properties
+
+Intelligent robots in surgery: Robot surgeons avoid human error
+
+Patient Care: Monitoring patient health, medications, data analysis, Pregnancy Management
+
+Research & Development: Gene analytics and editing, Device and drug comparative effectiveness, Drug discovery
+
+Healthcare Management: Brand management and marketing, Pricing and risk, Market research
+
+AI in drug discovery and production: Detects correct base components for immunity against viruses
+
+Banking and Finance:
+AI in fraud detection: Analyzes data points in real-time to flag suspicious transactions
+
+Machine learning helps in investment: Provides advanced market insights for fund managers
+
+Chatbots: 24*7 customer service
+
+Mobile Apps Detects Fraud: Detects risks and reduces fraudulent activities
+
+Risk Management: Financial status checking, document verification, loan issuance
+
+Data Collection & Analysis: Collects and creates learning process to enhance customer experience
+
+Portfolio Management: Simplifies card management and authentication process
+
+Next-Level Security: Ensures high level of security in banking operations
+
+Customization of services: AI-powered apps track user behaviour for personalized suggestions
+
+Media & Entertainment:
+Content Personalization: Analyses user behaviour for content recommendations
+
+Decision Automation: Creates performance reports from raw analytics
+
+Operations:
+Process Mining: Offers fastest period to insights about as-is methods
+
+Predictive Maintenance: Predicatively maintains robots and machinery
+
+Manufacturing Analytics: Analyses manufacturing process from production to logistics
+
+Inventory & Supply Chain Optimization: Reduces stock, maximizes inventory turnover
+
+Robotics: Automates physical processes like manufacturing or logistics
+
+Collaborative Robot: Flexible robots that learn by imitating human employees
+
+Cashierless Checkout: Allows retail to serve customers without cashiers
+
+Invoicing: Automates invoicing actions, reduces invoicing faults
+
+Telecommunication:
+Virtual Assistance: Supports traffic, reduces call wait time, maintains and troubleshoots problems
+
+Fraud Detection: Uses ML algorithms to detect abnormal traffic and stop fraudulent practices
+
+Predictive Analytics: Enables preventive measures against impending losses
+
+Client Sentiment Analysis: Analyzes changed customer behavior, preferences, and patterns
+
+Marketing:
+Marketing analytics: Tracks media action and offers insights into PR efforts
+
+Personalized Marketing: Helps businesses give personalized experiences for customers
+
+Context-Aware Marketing: Protects brand and increases marketing productivity
+
+Education:
+Personalized Learning: Caters to specific needs and identifies effective education patterns
+
+AI Application in Quality Control: AI-based learning systems with virtual supporters like chatbots
+
+Retail:
+Improved Advertisement: Places ads where they capture most customers
+
+Stores can become cashier-free: Robotization reduces lines and human employees
+
+In-store assistance: Provides video ads, nutritional info, promotions in different languages
+
+Virtual fitting rooms: Customers save time finding right outfit
+
+Supply chain management and logistics: Restores demand for specific products considering sales history, location, climate, trends
+
+Product classification: Classifies millions of items from different vendors
+
+Customer satisfaction tracking: Determines mood of customers during shopping
+
+Method for Pricing: Guarantees productivity in suitable pricing
+
+Insurance:
+Insurance price and guarantee: Underwriters use software and data to determine risk
+
+Reserve optimization of claims: Sets aside claims to pay policyholders
+
+Automatic check: Automated verification for underwriting and claim decisions
+
+Effective customer support: Reduces labor-intensive effort
+
+Personalized recommendation systems: Personalized policies, loyalty programs and recommendations
+
+Marketing and trend analysis: Finds potential candidates for new products
+
+Sales:
+Sales Forecasting: Robotically predicts sales based on customer contacts and earlier sales
+
+Lead generation: Creates leads leveraging databases and social networks
+
+Sales Data Input Automation: Syncs calendar, address book, emails, phone calls, and messages to CRM
+
+Predictive sales/lead scoring: Prioritizes sales rep actions based on lead scores
+
+Sales Chatbot: Provides 24/7 functioning, intelligent, self-improving bots
+
+AI-based agent coaching: Trains sales reps and client service employees
+
+Retail Sales Bot: Delivers correct act depending on customer characteristics
+
+RPA Use Cases by Industry:
+Telecommunications:
+Incident - Switch Port Down/Flapping: Switches log based on incident tickets, copies logs in ticket
+
+Pending Tickets Follow-up With Customer: Checks tickets in pending status, sends reminders
+
+Quality Check For Customer Tickets: Checks tickets quality for category, status, escalation, handle time
+
+Client Satisfaction Surveys: Recovers reports, creates survey forms, shares URL via SMS
+
+Monitor Network Usage Through Aggregation Of Data: Monitors bandwidth usage over remote monitoring
+
+Staff Daily Activity Report: Creates report on staff activities like ticket handling, events, email response
+
+Media & Entertainment:
+Content Creation: Automates organized news content using RPA with AI algorithms
+
+Content Verification: Validates documents, contracts, and machine-written content
+
+Content Discovery: Tracks online news and competitor websites for content ideas
+
+Forms Processing: Processes daily forms like License requests, Copywriter requests, Synchronization forms
+
+Data Migration: Automatically migrates data between systems
+
+Human Resource:
+Resume screening and candidate shortlisting: Gathers files and compares with job requirements
+
+Offer letter administration: Gathers information, creates offer letter, sends it, monitors returned documents
+
+Onboarding new hires: Provides credentials, onboarding documents
+
+Employee data management: Minimizes risk of improper data entries
+
+Government & Public Services:
+Surveys & Census: Conducts public survey and census programs across geographies
+
+Online Feedback Data Gathering: Crosschecks news sources for comments related to organization
+
+Tracking COVID-19 Cases: Updates database of COVID-19 cases across community facilities
+
+Reporting and Compliance for Government Programs: Automates organizational tasks in reporting and compliance
+
+ePass Generation: Automates pass creation
+
+Real Estate:
+Rent Payment Reminders: Checks pending rent payments, sends auto-reminders
+
+Update Vacant Properties: Recovers list of vacant properties, updates data on real estate websites
+
+Remove Sold/Rented Properties: Scrapes sold/rented properties, updates website information
+
+Manage Vendors: Auto-updates vendor data from Excel
+
+Updation Of Failed Records: Auto-updates failed records from batch upload
+
+Onboard New Suppliers: Reads new supplier list from Excel, transfers to supplier management system
+
+Onboard New Properties: Adds new properties by analysing data from business system
+
+Healthcare:
+Simplifying patient appointment scheduling: Automates patient data collection and processing
+
+Speeding up account settlements: Estimates bill amount considering tests, medicines, wardroom, food, doctor fees
+
+Implementing discharge instructions: Ensures discharge guidelines, sends reminders about prescriptions
+
+Recording audit procedures: Records data and generates reports during audits
+
+Logistics:
+Supplier Fuel Bills Upload: Goes through vendor mails, auto-downloads bill attachments
+
+Billing Process: End-to-end processing of billing tasks, reduces time by 25-30%
+
+Billing For Leased Vehicles: Validates and releases payment for leased vehicles
+
+Vehicle Repair Billing: Auto-checks and approves Repair Bills for valid reasons
+
+Accident Repair Bills: Retrieves accident-related details, auto-validates expenditure
+
+Fuel consumption tracking: Generates daily, weekly, monthly inventory account for fuel
+
+Banking:
+Customer Onboarding: Eradicates manual mistakes, saves time for back-office operations
+
+Contact Center Optimization: Updates customer profiles with latest data, ensures compliance reporting
+
+Bank Reconciliation Process: Replaces manual efforts with rules-based automation
+
+Loan Application Processing: Makes formalities quick and simple
+
+Automated Report Generation: Standardizes data aggregation, develops templates for reporting
+
+Manufacturing:
+Invoice Processing: Automates challenges like multiple invoice formats, consolidated data
+
+Customer Service: Categories enquiries and offers initial responses
+
+Periodic Report Preparation: Auto-generates reports, analyzes contents, emails to managers
+
+Price Comparison: Creates summary of prices, extracts data for best pricing
+
+Data Validation: Checks accuracy and quality of source data
+
+Technologies and Tools
+AI Technologies:
+django, open source, python, OpenCv, TensoFlow, Keras, PyTorch, Dialogflow
+
+JavaScript, nodejs, Angularjs, Microsoft CNTK, Flask, APACHE Spark, hadoop, Java
+
+Matlab, php, Microsoft Visual Studio, Microsoft SQL Server, Azure, AWS, Google Cloud Platform, Docker, Gradle
+
+RPA Partnerships:
+UiPath
+
+SAP
+
+Power Automate
+
+Blue Prism
+
+Automation Anywhere
+
+Intellentbot
+
+Case Studies
+AI Case Studies:
+Identify Regulations and monitor compliance as per Law: ML solution extracts state & federal regulations, validates company compliance. Customer: Attorney consulting firm (USA)
+
+Nonperforming assets (NPA's) – Anomaly detection: Validates customer financial data & identifies NPA's, gives score to each customer. Customer: Non-banking financial company (APAC)
+
+Virtual Assistant to Doctor: Chatbot pre-screens patients, performs admin tasks like booking appointment, insurance claims. Customer: Hospital in India
+
+Toll fee validation based on vehicle type: Deep learning solution validates approaching vehicles, captures & reads vehicle number, model & make. Customer: Construction company operates toll road (APAC)
+
+Product Recommendation System: Analyses customer profile, history, on-screen navigations. Customer: Online gift seller (Europe)
+
+RPA Case Studies:
+Invoice Generation Bot: Raises invoices by collecting data from different sources. Customer: Law firm (multiple countries). Applications: FedEx, Zoho, API's, Outlook
+
+Patient Clinical Details Bot: Retrieves patient clinical details from legacy system, provides consolidated view to physician. Customer: Large hospital chain in Denmark. Applications: Legacy HMS, Outlook, API's
+
+Information Retrieval Bot: Gets information from user through web application, runs operations on multiple websites. Customer: Rental Group Company. Applications: Multiple Web Applications, Multiple API's, DB
+
+Document Printing Bot: Prints mandatory documents for govt. submission and archives for 50 branches. Customer: Largest banking customer in Hongkong. Applications: Multiple systems
+
+Inventory Maintenance Bot: Maintains inventory required for uninterrupted production. Customer: IT service provider in UK. Applications: Infor ERP, MS office
+
+Purchase Request Processing Bot: Receives purchase requests, reads required information, publishes into end system. Customer: Largest supplier for marine and shipping services from Philippines. Applications: Multiple PDF's, Outlook, In-house application
+
+QA Case Studies:
+Mobile Application Testing: Communicator application for team communication (cloud-based customizable application). Geo: APAC (Malaysia). Tools: Jira, Selenium & TestNG, Appium, JMeter, BurpSuite Pro
+
+Mobile Test Automation & Manual Testing: Group of mobile applications for employee rewards, offline book reading, task management. Geo: USA. Tools: Enterprise Mobile Automation Framework, Appium, Browser Stack
+
+Test Automation – Responsive application: Web platform for Vue.js development community. Geo: ANZ (Australia). Tools: JS Test Automation Framework, Nightwatch JS, Bugzilla
+
+Performance Testing & Engineering, Pen Testing: Business intelligence product providing data visualization using AI. Geo: USA, APAC (Singapore). Tools: Jmeter, BlazeMeter, Performance Engineering Framework, BurpSuite Pro
+
+Test Automation CoE setup, Framework and Test Automation: Group of applications for hearing equipment. Geo: Europe (UK). Tools: Testcomplete, Automation framework, QA Complete
+
+Client Success Stories:
+South Korean automotive manufacturer: AI Robots digitalise 20 processes across accounting, corporate finance, production, operations, taxation
+
+Seafood industry company: RPA automation for Reconciliation work of bank accounts and GLs
+
+Multinational manufacturer: AI Robots digitalise 4 processes across corporate finance and taxation
+
+Blog Posts/Articles
+APPIUM INSTALLATION GUIDE (2022-05-24): Setting up Appium is not a simple process of installing a single tool
+
+FUTURE OF RPA AS PER ANALYSTS, CURRENT CHALLENGES OF RPA AND ITS APPLICATIONS (2025-07-05): Robotic Process Automation is a buzz in business process automation due to several factors
+
+WEBINAR ON DIGITALISATION OF FINANCIAL & ACCOUNTING PROCESSES USING AI BOTS (2019-08-20): Key Take-Aways – What is Robotic Process Automation (Bot) & Artificial Intelligence
+
+HOW TO WRITE APPIUM PROGRAM USING REAL DEVICE AND EMULATOR (2022-05-24): APPIUM is a freely distributed open source mobile application UI Testing framework
+
+ROBOTIC PROCESS AUTOMATION TRAINING USING UI-PATH (2025-07-05): Training covers basics of Robotic Process Automation and Uipath
+
+RPA SALARY TRENDS AND WHY THE CONSULTANT RATES ARE HYPED (2025-07-05): Japan, the Current Market Stats: Start Today Co., which works well known online
+
+300+ AI, GenAI, LLM & AI Agent Technologies — The Ultimate Catalog (2025-08-25): Comprehensive catalog of AI technologies
+
+Demo Videos
+AI Demos:
+Artificial Intelligence (AI) Use Cases for Healthcare
+
+AI used cases in finance
+
+How Artificial Intelligence (AI) is used in Biotechnology - Use cases
+
+AI Based - Fraud Identification & NPA (Non Performing Assets) Analysis
+
+AI Chatbot for Real Estate - Virtual Sales Executive
+
+Automated Invoice(PDF/Image) Processing Using Open Source RPA/AI Bots
+
+Virtual Assistant to the Doctor | AI Based Pre screening Junior Doctor
+
+Face mask detection & tracking in crowd
+
+Chat-bot Types (AI Based | Command based | Whats App | Skype | Command)
+
+Face mask identification
+
+RPA Demos:
+GSTR 2A vs Books Automated Reconciliation by AI Robots
+
+SAP automation using RPA
+
+QuickBooks Accounting Processes Automation Using RPA
+
+Robotic Process Automation(RPA) use cases in Accounting and Finance
+
+How RPA helps CEO's and CFO's in managing operations efficiently
+
+Automated Invoice(PDF/Image) Processing Using Open Source RPA/AI Bots
+
+Company Statistics
+Continents services: 1+
+
+Customers: 1+
+
+Employees are certified: 1%
+
+Yrs. of cumulative leadership experience: 0+
+
+Solutions, frameworks, and ready-to-use templates: 100+
+
+Implementation Approach
+Industry 4.0 Implementation:
+Discover → Pilot → Scale: Start with value discovery and 4–6 week pilot to prove ROI, then scale across plants
+
+Governed, Secure, Observable: Enterprise-grade delivery with model governance, data privacy, monitoring and cost control
+
+Key Differentiators
+Technical architects as founders: Solutions delivered with high quality considering future maintenance
+
+Continuous improvement: Applying best practices and following standard processes
+
+Focus on Productivity, Process Efficiency, Performance, and Work-Life Balance
+
+Full spectrum AI ecosystem: Generative AI, Agentic AI, Deep Learning, NLP, Computer Vision
+
+Intelligent automation: RPA, Industry 4.0 solutions, Quality Assurance frameworks
+
+100+ solutions, frameworks, and ready-to-use templates

@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# frontend folder (legacy)
+/frontend/
+
+# map folder (standalone demo)
+/map/

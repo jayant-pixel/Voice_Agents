@@ -1,26 +1,495 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --border-color: #000;
+  --bg-color: #fff;
+  --gray-text: #666;
+  /* Updated to a super vibrant/hot pink */
+  --pink-accent: #FF0055;
+  /* Vibrant Pink */
+  --font-serif: var(--font-serif), "Times New Roman", Times, serif;
+  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+
+  /* LiveKit Overrides variables */
+  --lk-bg: transparent;
+  --lk-control-bg: #ffffff;
+  --lk-control-hover-bg: #f4f4f5;
+  --lk-control-active-bg: #e4e4e7;
+  --lk-control-fg: #1a1a1a;
+  --lk-border-color: #000000;
+  --lk-accent-bg: var(--pink-accent);
+  --lk-accent-fg: #000000;
+  --lk-button-bg: var(--pink-accent);
+  --lk-button-fg: #000000;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg-color);
+  --color-foreground: #000;
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f4f4f4;
+  color: #000;
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  /* Prevent body scroll */
+}
+
+/* --- Layout Wrapper --- */
+.agent-component-wrapper {
+  font-family: var(--font-sans);
+  background-image: url('/agent-bg.avif');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  width: 100vw;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* --- Main Window --- */
+.agent-box {
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  width: 100%;
+  max-width: 1100px;
+  height: 85vh;
+  /* Fixed height for single screen feel */
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 20px 20px 0px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 2;
+}
+
+/* Top Bar */
+.win__title.hudson {
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 16px;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.media-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.win-dot.is-square {
+  width: 10px;
+  height: 10px;
+  background-color: var(--pink-accent);
+}
+
+.text-type-raster {
+  font-family: monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* --- Layout: Sidebar vs Content --- */
+.agent-interface-flex {
+  display: flex;
+  flex: 1;
+  /* Take remaining height */
+  overflow: hidden;
+  /* No scroll on main container */
+}
+
+/* === Sidebar Styles (Now holds the text) === */
+.agent-box-wrap.hudson {
+  width: 350px;
+  /* Wider sidebar for text */
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  background-color: #F8F8F6;
+  overflow-y: auto;
+  /* Scroll ONLY inside sidebar if needed */
+  padding-bottom: 20px;
+}
+
+.hudson-bar {
+  padding: 24px 24px 0 24px;
+}
+
+.pals-logo {
+  margin-bottom: 20px;
+}
+
+/* Sidebar Info Typography */
+.tab-short-wrap {
+  padding: 0 24px;
+  margin-bottom: 24px;
+}
+
+.font-secondary {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tab-short-lines {
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+/* Integrations List in Sidebar */
+.conversation-wrap {
+  padding: 0 24px;
+}
+
+.conversation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conversation-content {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 8px;
+}
+
+.home-tabs-heading-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: #000;
+  letter-spacing: 0.05em;
+}
+
+.home-tabs-text {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+
+/* === Main Content Area (Video Only) === */
+.tabs-content-wrapper {
+  flex: 1;
+  background: #fff;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hudson-video-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* Fill available space */
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #000;
+  overflow: hidden;
+}
+
+/* Persona Static Image */
+.persona-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* PreJoin Overlay - positions PreJoin over the background image */
+.prejoin-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  z-index: 5;
+  padding-bottom: 1px;
+}
+
+/* Custom Join Button Wrapper */
+.join-button-wrapper {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+/* Custom Join Button - Vibrant Pink */
+.custom-join-button {
+  background-color: var(--pink-accent);
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 0;
+  padding: 18px 48px;
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  box-shadow: 6px 6px 0px 0px #000;
+  transition: all 0.1s ease;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.custom-join-button:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 9px 9px 0px 0px #000;
+  background-color: #ff3377;
+}
+
+.custom-join-button:active {
+  transform: translate(3px, 3px);
+  box-shadow: 3px 3px 0px 0px #000;
+}
+
+
+/* Title Overlay */
+.meet-title {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  color: var(--pink-accent);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.heading-two-xsmall {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 4rem;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--pink-accent) !important;
+}
+
+/* --- LiveKit Override & Hiding --- */
+
+/* Hide the entire video preview area but keep the component functional */
+.lk-prejoin {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  position: relative !important;
+}
+
+/* HIDE the video container completely - we use our own persona image */
+.lk-video-container,
+.lk-prejoin video,
+.lk-prejoin .lk-participant-placeholder {
+  display: none !important;
+}
+
+/* 
+   AGGRESSIVELY Hide all device toggles and selectors. 
+   We target every button except the join button.
+*/
+.lk-prejoin .lk-button-group button,
+.lk-prejoin .lk-button-group .lk-button,
+.lk-device-menu,
+.lk-audio-conference-menu,
+.lk-video-conference-menu,
+.lk-source-selector,
+.lk-toggle-button,
+.lk-camera-button,
+.lk-microphone-button {
+  display: none !important;
+}
+
+/* 
+   Force show the Join button. 
+*/
+.lk-prejoin .lk-button-group .lk-join-button {
+  display: flex !important;
+}
+
+/* Position the entire prejoin form at the bottom */
+.lk-prejoin {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  padding-bottom: 40px !important;
+}
+
+/* Style the form container */
+.lk-prejoin form,
+.lk-prejoin .lk-prejoin-form {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 16px !important;
+  width: 100% !important;
+  max-width: 400px !important;
+  margin: 0 auto !important;
+  z-index: 20 !important;
+  position: relative !important;
+}
+
+/* Username Input Styling */
+.lk-prejoin input[type="text"],
+.lk-prejoin .lk-form-control,
+.lk-prejoin input {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 2px solid #000 !important;
+  border-radius: 0 !important;
+  padding: 14px 20px !important;
+  font-family: monospace !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #000 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  width: 100% !important;
+  max-width: 350px !important;
+  box-shadow: 4px 4px 0px 0px #000 !important;
+  outline: none !important;
+}
+
+.lk-prejoin input::placeholder {
+  color: #666 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+.lk-prejoin input:focus {
+  border-color: var(--pink-accent) !important;
+  box-shadow: 4px 4px 0px 0px var(--pink-accent) !important;
+}
+
+/* Position the button group below input */
+.lk-prejoin .lk-button-group {
+  background: transparent !important;
+  position: relative !important;
+  width: 100% !important;
+  max-width: 350px !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+/* Styling specifically for the Join Button */
+.lk-join-button {
+  background-color: var(--pink-accent) !important;
+  color: #000 !important;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  padding: 18px 48px !important;
+  font-family: monospace !important;
+  font-weight: 800 !important;
+  font-size: 1.1rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  box-shadow: 6px 6px 0px 0px #000 !important;
+  transition: all 0.1s ease !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 200px !important;
+  height: auto !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Ensure disabled state is still visible - AGGRESSIVE OVERRIDE */
+.lk-join-button:disabled,
+.lk-prejoin .lk-join-button:disabled,
+.lk-button-group .lk-join-button:disabled,
+.lk-prejoin .lk-button-group .lk-join-button:disabled,
+button.lk-join-button:disabled,
+button.lk-join-button[disabled],
+.lk-join-button[disabled] {
+  background-color: var(--pink-accent) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  filter: none !important;
+  pointer-events: auto !important;
+}
+
+/* Override any button:disabled selectors from LiveKit */
+.lk-button:disabled,
+.lk-prejoin .lk-button:disabled,
+button:disabled.lk-join-button {
+  opacity: 1 !important;
+  background-color: var(--pink-accent) !important;
+}
+
+.lk-join-button:hover {
+  transform: translate(-3px, -3px) !important;
+  box-shadow: 9px 9px 0px 0px #000 !important;
+  background-color: #ff3377 !important;
+}
+
+.lk-join-button:active {
+  transform: translate(3px, 3px) !important;
+  box-shadow: 3px 3px 0px 0px #000 !important;
+}
+
+/* Fix Video Container "Dullness" */
+/* Ensure the background isn't just a flat void if possible, or keep it stark black as per design */
+.lk-video-container {
+  background-color: #000 !important;
+}
+
+/* Remove any potential overlays from LiveKit */
+.lk-prejoin-video-overlay {
+  display: none !important;
+}
+
+
+/* Responsive */
+@media (max-width: 900px) {
+  .agent-interface-flex {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .agent-box {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .agent-box-wrap.hudson {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #000;
+  }
+
+  .hudson-video-wrap {
+    aspect-ratio: 16/9;
+    height: auto;
+  }
 }

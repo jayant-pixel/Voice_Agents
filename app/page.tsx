@@ -1,65 +1,156 @@
-import Image from "next/image";
+"use client";
+
+import { PreJoin, LiveKitRoom } from "@livekit/components-react";
+import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
+import { AvatarRoom } from "@/components/AvatarRoom";
 
 export default function Home() {
+  const router = useRouter();
+  const [token, setToken] = useState<string | null>(null);
+  const [roomName, setRoomName] = useState<string | null>(null);
+
+  const handleJoin = useCallback(async (values: { username: string }) => {
+    const room = "cara-room";
+    setRoomName(room);
+    try {
+      const resp = await fetch(`/api/token?room=${room}&username=${values.username}`);
+      const data = await resp.json();
+      if (data.token) {
+        setToken(data.token);
+
+        // REQUEST AGENT (Lifecycle Start)
+        fetch("/api/livekit/request-agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ room }),
+        }).catch(err => console.error("Failed to request agent:", err));
+
+      } else {
+        console.error("No token received", data);
+      }
+    } catch (e) {
+      console.error("Error fetching token:", e);
+    }
+  }, []);
+
+  const handleDisconnect = useCallback(async () => {
+    if (roomName) {
+      // STOP AGENT (Lifecycle End)
+      fetch(`/api/livekit/stop-agent?room-name=${encodeURIComponent(roomName)}`, {
+        method: "DELETE",
+      }).catch(err => console.error("Failed to stop agent:", err));
+    }
+    setToken(null);
+    setRoomName(null);
+  }, [roomName]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="agent-component-wrapper">
+      {/* FULL SCREEN ROOM OVERLAY */}
+      {token && (
+        <div className="fixed inset-0 z-[100] bg-black">
+          <LiveKitRoom
+            token={token}
+            serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+            connect={true}
+            audio={true}
+            video={false}
+            onDisconnected={handleDisconnect}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <AvatarRoom />
+          </LiveKitRoom>
         </div>
-      </main>
+      )}
+
+      {/* The Window Frame (PreJoin State) */}
+      <div className="agent-box is-tabs">
+        {/* Window Header (Top Bar) */}
+        <div className="win__title hudson">
+          <div className="support-design-box bn">
+            <div className="media-wrap">
+              <div className="win-dot is-square"></div>
+              <p className="text-size-tiny text-type-raster">SAY HI CARA</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="agent-interface-flex">
+          {/* LEFT SIDEBAR */}
+          <div className="agent-box-wrap hudson">
+            {/* Logo Area */}
+            <div className="hudson-bar">
+              <div className="mb-8">{/* Spacer */}</div>
+              <div className="recent-wrap"></div>
+            </div>
+
+            {/* Content */}
+            <div className="tab-short-wrap">
+              <div className="text-size-large font-secondary">
+                <em>So basically</em>
+              </div>
+              <div className="tab-short-lines">
+                <svg width="100%" height="5" viewBox="0 0 130 5" fill="none">
+                  <line y1="2.5" x2="130" y2="2.5" stroke="black" strokeOpacity="0.2" strokeWidth="1" strokeDasharray="2 2" />
+                </svg>
+              </div>
+              <p className="text-size-tiny">
+                I'm kind of like the older sister you never had. Let's talk about whatever's on your mind. I'll be here.
+              </p>
+            </div>
+
+            <div className="conversation-wrap">
+              <div className="text-size-large font-secondary">
+                <em>Integrations</em>
+              </div>
+              <div className="tab-short-lines">
+                <svg width="100%" height="5" viewBox="0 0 473 5" fill="none">
+                  <line y1="2.5" x2="473" y2="2.5" stroke="black" strokeOpacity="0.2" strokeWidth="1" strokeDasharray="2 2" />
+                </svg>
+              </div>
+
+              <div className="conversation-grid">
+                <div className="conversation-content">
+                  <p className="home-tabs-heading-text">EMAIL</p>
+                  <p className="home-tabs-text text-size-tiny">Inbox zero, finally.</p>
+                </div>
+                <div className="conversation-content">
+                  <p className="home-tabs-heading-text">CALENDAR</p>
+                  <p className="home-tabs-text text-size-tiny">Scheduling made sane.</p>
+                </div>
+                <div className="conversation-content">
+                  <p className="home-tabs-heading-text">TODO</p>
+                  <p className="home-tabs-text text-size-tiny">Tasks, managed.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT CONTENT AREA */}
+          <div className="tabs-content-wrapper">
+            <div className="hudson-video-wrap">
+              {/* Persona Static Image as Background */}
+              <img
+                src="https://lab.anam.ai/persona_thumbnails/cara_windowsofa.png"
+                alt="Cara"
+                className="persona-image"
+              />
+
+              {/* PreJoin Component - overlaid on the image */}
+              <div className="prejoin-overlay">
+                <PreJoin
+                  onSubmit={handleJoin}
+                  defaults={{
+                    videoEnabled: false,
+                    audioEnabled: true,
+                  }}
+                  persistUserChoices={true}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
