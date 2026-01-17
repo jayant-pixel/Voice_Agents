@@ -1,6 +1,8 @@
 import os
+import json
 import logging
 import yaml
+import base64
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -16,6 +18,7 @@ from livekit.agents import (
     metrics,
     MetricsCollectedEvent,
     llm,
+    get_job_context,
 )
 
 from livekit.plugins import (
@@ -30,13 +33,13 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 # Custom TTS & KB Manager
 from chatterbox_plugin.chatterbox_tts import ChatterboxTTS
-from kb_manager import kb_manager
+from KB_pipeline.kb_search import kb_searcher as kb_manager
 
 # -------------------------
 # ENV & LOGGING
 # -------------------------
 load_dotenv()
-logger = logging.getLogger("digital-employee")
+logger = logging.getLogger("thermopads-supervisor")
 
 # -------------------------
 # CONFIG & PERSONA LOADING
@@ -69,33 +72,520 @@ def load_persona():
 NAME, GREETING, INSTRUCTIONS, SYSTEM_GUIDELINES = load_persona()
 
 # -------------------------
-# TOOLS (Generic Template)
+# OVERLAY HELPER FUNCTIONS
+# -------------------------
+
+async def send_overlay(overlay_type: str, title: str, data: dict, subtitle: str = "", source: str = ""):
+    """Helper function to send overlay to frontend"""
+    try:
+        room = get_job_context().room
+        participant_identity = next(iter(room.remote_participants.keys()), None)
+        
+        if not participant_identity:
+            logger.warning("No participant connected for overlay display")
+            return False
+        
+        payload = json.dumps({
+            "type": overlay_type,
+            "title": title,
+            "subtitle": subtitle,
+            "source": source,
+            "data": data
+        })
+        
+        await room.local_participant.perform_rpc(
+            destination_identity=participant_identity,
+            method="showOverlay",
+            payload=payload,
+            response_timeout=5.0,
+        )
+        
+        logger.info(f"Overlay sent: {overlay_type} - {title}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send overlay: {e}")
+        return False
+
+def should_show_overlay(data_points: int, has_table: bool = False, has_steps: bool = False) -> bool:
+    """Determine if overlay should be shown based on complexity"""
+    if data_points >= 5:
+        return True
+    if has_table and data_points >= 3:
+        return True
+    if has_steps and data_points >= 3:
+        return True
+    return False
+
+# -------------------------
+# KNOWLEDGE BASE TOOL
 # -------------------------
 
 @llm.function_tool
-async def knowledge_lookup(query: str) -> str:
-    """Search the company knowledge base for information, manuals, or media links."""
-    return await kb_manager.query(query)
+async def knowledge_lookup(
+    query: str,
+    context_type: str = "general"
+) -> str:
+    """
+    Search the Thermopads manufacturing knowledge base for technical information.
+    
+    Use this tool to find:
+    - Temperature settings and profiles (TPL/TD/28 series)
+    - Die and nozzle specifications (DDR Chart-3)
+    - Work instructions and procedures (TPL/WI/P/15)
+    - Quality control standards and tolerances
+    - Safety protocols and requirements
+    - Material specifications and properties
+    - Troubleshooting guides
+    
+    Args:
+        query: The technical question or topic to search for. Be specific.
+               Examples: "ETFE temperature zones for ROSENDAHL TPL/M/60",
+                        "Die selection for 0.35mm wire 0.32mm coating",
+                        "Strip force adjustment procedure"
+        context_type: Type of information needed. Options:
+                     - "temperature": Temperature settings and zones
+                     - "tooling": Die, nozzle, tooling specifications
+                     - "procedure": Work instructions, setup steps
+                     - "quality": Quality specs, tolerances, measurements
+                     - "safety": Safety protocols, limits, PPE requirements
+                     - "troubleshooting": Problem diagnosis and solutions
+                     - "general": General search (default)
+    
+    Returns:
+        Relevant technical information with document citations.
+        
+    Important: 
+    - Always cite document references in your response (e.g., "As per TPL/TD/28...")
+    - For complex data (5+ values, tables, procedures), consider using show_overlay tool
+    - For temperature profiles with 6+ zones, use show_temperature_profile tool instead
+    """
+    try:
+        # Add context type to query for better retrieval
+        enhanced_query = f"[{context_type}] {query}" if context_type != "general" else query
+        
+        result = await kb_manager.query(enhanced_query, include_images=False)
+        
+        if not result.text:
+            return f"No information found for query: {query}. Please rephrase or ask for related information."
+        
+        # Format response with sources
+        response = result.text
+        if result.sources:
+            sources_str = ", ".join(result.sources[:3])  # Limit to top 3 sources
+            response += f"\n\nReference: {sources_str}"
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Knowledge lookup error: {e}")
+        return f"Error searching knowledge base: {str(e)}"
 
-# --- HOW TO DEFINE A NEW TOOL ---
-# To add a custom tool (e.g., for Sales or Training):
-# 1. Define an async function with @llm.function_tool decorator.
-# 2. Add it to the 'tools' list in the DigitalEmployee class below.
-# Example:
-# @llm.function_tool
-# async def check_availability(product_id: str) -> str:
-#     """Checks if a product is in stock."""
-#     return "In stock and ready to ship!"
+# -------------------------
+# SPECIALIZED OVERLAY TOOLS
+# -------------------------
+
+@llm.function_tool
+async def show_temperature_profile(
+    material: str,
+    machine: str,
+    zones: dict
+) -> str:
+    """
+    Display temperature profile overlay for machine setup.
+    Use this when providing temperature settings with 6+ zones.
+    
+    Args:
+        material: Material type (e.g., "ETFE", "FEP", "PFA", "PVC")
+        machine: Machine identifier (e.g., "ROSENDAHL TPL/M/60", "WINDSOR TPL/M/43")
+        zones: Dictionary of zone temperatures. Example:
+               {
+                   "barrel": {"Z1": "280°C", "Z2": "290°C", "Z3": "310°C", "Z4": "330°C"},
+                   "head": {"Flange": "340°C", "H1": "350°C", "H2": "360°C", "Die": "370°C"},
+                   "auxiliary": {
+                       "Water": "40°C ±10°C",
+                       "Gap": "0.5-1.5 meters",
+                       "Pre-heater": "20-60%",
+                       "Current": "10-15A"
+                   },
+                   "tolerance": "±20°C",
+                   "heating_time": "45-60 minutes"
+               }
+    
+    Returns:
+        Confirmation that overlay was displayed
+    """
+    try:
+        # Flatten zones into rows for table display
+        rows = []
+        
+        # Barrel zones
+        if "barrel" in zones:
+            for zone, temp in zones["barrel"].items():
+                rows.append({"zone": zone, "temperature": temp, "section": "Barrel"})
+        
+        # Head zones
+        if "head" in zones:
+            for zone, temp in zones["head"].items():
+                rows.append({"zone": zone, "temperature": temp, "section": "Head"})
+        
+        # Auxiliary parameters
+        aux_text = []
+        if "auxiliary" in zones:
+            for param, value in zones["auxiliary"].items():
+                aux_text.append(f"• {param}: {value}")
+        
+        # Notes
+        notes = []
+        if "tolerance" in zones:
+            notes.append(f"⚠️ Tolerance: {zones['tolerance']} on all zones")
+        if "heating_time" in zones:
+            notes.append(f"⏱ Heating time: {zones['heating_time']}")
+        
+        data = {
+            "rows": rows[:8],  # Max 8 rows per spec
+            "auxiliary": "\n".join(aux_text[:6]),  # Max 6 aux items
+            "notes": "\n".join(notes[:3])  # Max 3 notes
+        }
+        
+        success = await send_overlay(
+            overlay_type="temperature-profile",
+            title=f"{material} Temperature Profile",
+            subtitle=f"Machine: {machine}",
+            source="TPL/TD/28 Rev 08/02",
+            data=data
+        )
+        
+        return "Temperature profile displayed on screen" if success else "Failed to display overlay"
+        
+    except Exception as e:
+        logger.error(f"Temperature profile overlay error: {e}")
+        return f"Error displaying temperature profile: {str(e)}"
+
+@llm.function_tool
+async def show_corrective_action(
+    issue: str,
+    steps: list,
+    safety_limits: dict = None
+) -> str:
+    """
+    Display step-by-step corrective action procedure.
+    Use this when providing multi-step troubleshooting solutions (3+ steps).
+    
+    Args:
+        issue: Description of the issue being corrected (e.g., "Screw Speed Mismatch")
+        steps: List of action steps. Each step is a dict with:
+               {
+                   "number": 1,
+                   "action": "Reduce screw speed",
+                   "details": [
+                       "From 31 to 28 RPM (-3 RPM total)",
+                       "Method: 1 RPM per step",
+                       "Wait: 5 minutes between steps"
+                   ]
+               }
+               Maximum 4 steps, 3-4 details per step
+        safety_limits: Optional dict of critical limits to display:
+                      {"Screw Speed": "25-35 RPM", "Ampere Load": "<85%", "Temperature": "No change"}
+    
+    Returns:
+        Confirmation that overlay was displayed
+    """
+    try:
+        # Format steps (max 4)
+        formatted_steps = []
+        for step in steps[:4]:
+            formatted_steps.append({
+                "number": step.get("number", len(formatted_steps) + 1),
+                "action": step.get("action", ""),
+                "details": step.get("details", [])[:4]  # Max 4 details per step
+            })
+        
+        # Format safety limits (single line with separators)
+        safety_text = ""
+        if safety_limits:
+            safety_items = [f"{k}: {v}" for k, v in list(safety_limits.items())[:4]]
+            safety_text = " | ".join(safety_items)
+        
+        data = {
+            "steps": formatted_steps,
+            "safety_limits": safety_text
+        }
+        
+        success = await send_overlay(
+            overlay_type="corrective-action",
+            title="Corrective Action Plan",
+            subtitle=f"Issue: {issue}",
+            source="Process Control SOP",
+            data=data
+        )
+        
+        return "Corrective action plan displayed on screen" if success else "Failed to display overlay"
+        
+    except Exception as e:
+        logger.error(f"Corrective action overlay error: {e}")
+        return f"Error displaying corrective action: {str(e)}"
+
+@llm.function_tool
+async def show_quality_verification(
+    parameter: str,
+    target: str,
+    tolerance: str,
+    measurements: list
+) -> str:
+    """
+    Display quality verification results with pass/fail status.
+    Use this when operator provides multiple measurement readings (3+ points).
+    
+    Args:
+        parameter: What was measured (e.g., "Output Dimension", "Strip Force")
+        target: Target value (e.g., "0.95mm", "40°C")
+        tolerance: Tolerance specification (e.g., "±0.02mm", "±10°C")
+        measurements: List of measurement dicts:
+                     [
+                         {"point": "Point 1", "reading": "0.94mm", "status": "pass"},
+                         {"point": "Point 2", "reading": "0.96mm", "status": "pass"},
+                         {"point": "Point 3", "reading": "0.95mm", "status": "pass"}
+                     ]
+                     Maximum 5 measurements
+    
+    Returns:
+        Confirmation that overlay was displayed with pass/fail verdict
+    """
+    try:
+        # Calculate acceptable range
+        # Extract numeric value and tolerance
+        import re
+        target_match = re.search(r'([\d.]+)', target)
+        tolerance_match = re.search(r'±([\d.]+)', tolerance)
+        
+        range_text = ""
+        if target_match and tolerance_match:
+            target_val = float(target_match.group(1))
+            tol_val = float(tolerance_match.group(1))
+            unit = target.replace(target_match.group(1), "").strip()
+            lower = target_val - tol_val
+            upper = target_val + tol_val
+            range_text = f"{lower:.2f} - {upper:.2f}{unit}"
+        
+        # Determine overall verdict
+        all_pass = all(m.get("status") == "pass" for m in measurements)
+        verdict = "ALL WITHIN SPECIFICATION" if all_pass else "OUT OF SPECIFICATION"
+        verdict_icon = "✅" if all_pass else "❌"
+        
+        # Calculate statistics if numeric
+        try:
+            readings = [float(re.search(r'([\d.]+)', m["reading"]).group(1)) for m in measurements]
+            avg = sum(readings) / len(readings)
+            range_val = max(readings) - min(readings)
+            stats_text = f"Average: {avg:.2f} | Range: {range_val:.2f}"
+        except:
+            stats_text = ""
+        
+        data = {
+            "spec": f"Target: {target} | Tolerance: {tolerance}",
+            "range": f"Acceptable Range: {range_text}",
+            "measurements": measurements[:5],  # Max 5 measurements
+            "statistics": stats_text,
+            "verdict": verdict,
+            "verdict_icon": verdict_icon
+        }
+        
+        success = await send_overlay(
+            overlay_type="quality-verification",
+            title="Quality Verification",
+            subtitle=f"Parameter: {parameter}",
+            source="Quality Control SOP QC-001",
+            data=data
+        )
+        
+        return f"Quality verification displayed: {verdict}" if success else "Failed to display overlay"
+        
+    except Exception as e:
+        logger.error(f"Quality verification overlay error: {e}")
+        return f"Error displaying quality verification: {str(e)}"
+
+@llm.function_tool
+async def show_documentation_reminder(
+    session_type: str,
+    auto_captured: dict,
+    manual_required: list
+) -> str:
+    """
+    Display documentation checklist reminder.
+    Use this to remind operator what needs to be logged in production records.
+    
+    Args:
+        session_type: Type of session (e.g., "Troubleshooting", "Setup", "Quality Check")
+        auto_captured: Dict of automatically captured data:
+                      {
+                          "Date & Time": "16 Jan 2026, 10:45 AM",
+                          "Machine": "Extruder 2",
+                          "Material": "ETFE, 0.35mm wire",
+                          "Issue": "Dimension instability",
+                          "Action": "Speed adjusted 31→28 RPM",
+                          "Result": "Within spec (0.93-0.97mm)"
+                      }
+                      Maximum 8 items
+        manual_required: List of items operator must add manually:
+                        ["Operator signature", "Shift supervisor approval", 
+                         "Material waste (if any)", "Additional comments"]
+                        Maximum 5 items
+    
+    Returns:
+        Confirmation that overlay was displayed
+    """
+    try:
+        # Format auto-captured (max 8 items)
+        auto_items = []
+        for key, value in list(auto_captured.items())[:8]:
+            auto_items.append({"label": key, "value": value})
+        
+        # Manual items (max 5)
+        manual_items = manual_required[:5]
+        
+        data = {
+            "auto_captured": auto_items,
+            "manual_required": manual_items,
+            "location_digital": "Main HMI → Production Tab → Current Run",
+            "location_paper": "Paper form at Supervisor desk",
+            "deadline": "Complete before shift handover"
+        }
+        
+        success = await send_overlay(
+            overlay_type="documentation-checklist",
+            title="Documentation Required",
+            subtitle=f"Session: {session_type}",
+            source="SOP-DOC-001",
+            data=data
+        )
+        
+        return "Documentation reminder displayed on screen" if success else "Failed to display overlay"
+        
+    except Exception as e:
+        logger.error(f"Documentation overlay error: {e}")
+        return f"Error displaying documentation reminder: {str(e)}"
+
+@llm.function_tool
+async def show_knowledge_summary(
+    problem: str,
+    root_cause: str,
+    solution: str,
+    key_learnings: list,
+    quick_reference: list = None
+) -> str:
+    """
+    Display learning summary at end of troubleshooting session.
+    Use this to provide educational recap for knowledge transfer.
+    
+    Args:
+        problem: Problem statement (1-2 sentences, max 120 chars)
+        root_cause: Root cause explanation (1-2 sentences, max 120 chars)
+        solution: Solution applied (1-2 sentences, max 120 chars)
+        key_learnings: List of learning point dicts (max 3):
+                      [
+                          {
+                              "title": "Speed Relationship",
+                              "lesson": "Screw↑ + Line same = Oversize. Always maintain proportional ratio."
+                          },
+                          {
+                              "title": "Adjustment Protocol",
+                              "lesson": "Small steps + Wait 5 min + Verify before next adjustment."
+                          }
+                      ]
+        quick_reference: Optional list of quick tips (max 3):
+                        ["Oversize? → Check screw speed increased",
+                         "Undersize? → Check line speed increased"]
+    
+    Returns:
+        Confirmation that overlay was displayed
+    """
+    try:
+        # Format learnings (max 3, 2 lines each)
+        formatted_learnings = []
+        for i, learning in enumerate(key_learnings[:3], 1):
+            formatted_learnings.append({
+                "number": f"{i}️⃣",
+                "title": learning.get("title", "")[:30],  # Max 30 chars for title
+                "lesson": learning.get("lesson", "")[:120]  # Max 120 chars
+            })
+        
+        # Quick reference (max 3 lines)
+        ref_text = "\n".join(quick_reference[:3]) if quick_reference else ""
+        
+        data = {
+            "problem": problem[:120],
+            "root_cause": root_cause[:120],
+            "solution": solution[:120],
+            "learnings": formatted_learnings,
+            "quick_reference": ref_text
+        }
+        
+        success = await send_overlay(
+            overlay_type="knowledge-summary",
+            title="Session Learning Summary",
+            subtitle="Key Takeaways",
+            source="Process Control Guide",
+            data=data
+        )
+        
+        return "Knowledge summary displayed on screen" if success else "Failed to display overlay"
+        
+    except Exception as e:
+        logger.error(f"Knowledge summary overlay error: {e}")
+        return f"Error displaying knowledge summary: {str(e)}"
+
+# -------------------------
+# UTILITY TOOLS
+# -------------------------
+
+@llm.function_tool
+async def hide_overlay() -> str:
+    """
+    Hide/dismiss the current UI overlay card.
+    Use this when the user is done viewing information or asks to close the overlay.
+    
+    Returns:
+        Confirmation that overlay was hidden
+    """
+    try:
+        room = get_job_context().room
+        participant_identity = next(iter(room.remote_participants.keys()), None)
+        
+        if not participant_identity:
+            return "No user connected"
+        
+        await room.local_participant.perform_rpc(
+            destination_identity=participant_identity,
+            method="hideOverlay",
+            payload="{}",
+            response_timeout=5.0,
+        )
+        
+        logger.info("Overlay hidden")
+        return "Overlay hidden"
+        
+    except Exception as e:
+        logger.error(f"Failed to hide overlay: {e}")
+        return f"Failed to hide overlay: {str(e)}"
 
 @llm.function_tool
 async def end_call() -> str:
-    """End the conversation and disconnect. Use this when the user says goodbye or the interaction is finished."""
+    """
+    End the conversation and disconnect the session.
+    Use this when the user says goodbye, thanks and leaves, or the interaction is completed.
+    
+    Returns:
+        Confirmation that session ended
+    """
     global _current_room
     if _current_room:
         try:
             await _current_room.disconnect()
-            return "Session ended."
-        except Exception:
+            logger.info("Session ended by agent")
+            return "Session ended. Thank you for using Thermopads Line Support."
+        except Exception as e:
+            logger.error(f"Error ending session: {e}")
             return "Error ending session."
     return "No active session."
 
@@ -104,17 +594,34 @@ async def end_call() -> str:
 # -------------------------
 _current_room = None
 
-class DigitalEmployee(Agent):
+class ThermopadsSupervisor(Agent):
     def __init__(self):
+        # Load system prompt from file
+        prompt_path = Path(__file__).parent / "thermopads_voice_agent_prompt.md"
+        if prompt_path.exists():
+            with open(prompt_path, "r") as f:
+                full_instructions = f.read()
+        else:
+            # Fallback to persona-based instructions
+            full_instructions = f"NAME: {NAME}\n\nCORE INSTRUCTIONS:\n{INSTRUCTIONS}\n\n--- SYSTEM GUIDELINES ---\n{SYSTEM_GUIDELINES}"
+        
         super().__init__(
-            instructions=f"NAME: {NAME}\n\nCORE INSTRUCTIONS:\n{INSTRUCTIONS}\n\n--- SYSTEM GUIDELINES ---\n{SYSTEM_GUIDELINES}",
-            tools=[knowledge_lookup, end_call],
+            instructions=full_instructions,
+            tools=[
+                knowledge_lookup,
+                show_temperature_profile,
+                show_corrective_action,
+                show_quality_verification,
+                show_documentation_reminder,
+                show_knowledge_summary,
+                hide_overlay,
+                end_call,
+            ],
         )
-
 
     async def on_enter(self):
         await self.session.generate_reply(
-            instructions=GREETING,
+            instructions=GREETING if GREETING else "Good morning. I am your Line Support Assistant. Tell me, which machine line are you working on?",
             allow_interruptions=True,
         )
 
@@ -128,7 +635,7 @@ def prewarm(proc: JobProcess):
 
 server.setup_fnc = prewarm
 
-@server.rtc_session(agent_name="surens-avatar")
+@server.rtc_session(agent_name="thermopads-supervisor")
 async def entrypoint(ctx: JobContext):
     global _current_room
     _current_room = ctx.room
@@ -169,7 +676,7 @@ async def entrypoint(ctx: JobContext):
     # Connect components
     await avatar.start(session, room=ctx.room)
     await session.start(
-        agent=DigitalEmployee(),
+        agent=ThermopadsSupervisor(),
         room=ctx.room,
         record=True,
         room_options=room_io.RoomOptions(

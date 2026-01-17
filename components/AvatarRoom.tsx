@@ -10,16 +10,27 @@ import {
     useLocalParticipantPermissions,
     useConnectionState,
     useDataChannel,
+    useLocalParticipant,
+    useRoomContext,
 } from "@livekit/components-react";
-import { ConnectionState, Track } from "livekit-client";
-import { useMemo, useCallback } from "react";
+import { ConnectionState, Track, RpcInvocationData } from "livekit-client";
+import { useMemo, useCallback, useState, useEffect } from "react";
+import { ManufacturingOverlay, OverlayData } from "./ManufacturingOverlay";
 
 export function AvatarRoom() {
+    const room = useRoomContext();
     const connectionState = useConnectionState();
+    const { localParticipant } = useLocalParticipant();
+    const [overlay, setOverlay] = useState<OverlayData | null>(null);
+
     const tracks = useTracks(
         [{ source: Track.Source.Camera, withPlaceholder: false }],
         { onlySubscribed: false }
     );
+
+    // ... (lines 20-130 roughly)
+
+
 
     const avatarTrack = useMemo(() => {
         return tracks
@@ -37,12 +48,49 @@ export function AvatarRoom() {
     // Show loading screen if not fully connected OR avatar isn't here yet
     const isLoading = connectionState !== ConnectionState.Connected || !avatarTrack;
 
+    // Register RPC methods for overlay control
+    useEffect(() => {
+        if (!room) return;
+
+        // Handler for showing overlay
+        const handleShowOverlay = async (data: RpcInvocationData) => {
+            try {
+                const parsed = JSON.parse(data.payload) as OverlayData;
+                setOverlay(parsed);
+                return JSON.stringify({ success: true });
+            } catch (error) {
+                console.error("Failed to parse overlay data:", error);
+                return JSON.stringify({ success: false, error: "Invalid payload" });
+            }
+        };
+
+        // Handler for hiding overlay
+        const handleHideOverlay = async () => {
+            setOverlay(null);
+            return JSON.stringify({ success: true });
+        };
+
+        // Register methods on the ROOM instance (not localParticipant)
+        room.registerRpcMethod("showOverlay", handleShowOverlay);
+        room.registerRpcMethod("hideOverlay", handleHideOverlay);
+
+        // Cleanup on unmount
+        return () => {
+            room.unregisterRpcMethod("showOverlay");
+            room.unregisterRpcMethod("hideOverlay");
+        };
+    }, [room]);
+
     useDataChannel(
         "lk.transcription",
         useCallback(() => {
             /* ignore LiveKit transcription payloads to avoid noisy console warnings */
         }, [])
     );
+
+    const handleDismissOverlay = useCallback(() => {
+        setOverlay(null);
+    }, []);
 
     return (
         <div className="relative w-full h-[100dvh] bg-black overflow-hidden flex flex-col items-center justify-center">
@@ -86,6 +134,13 @@ export function AvatarRoom() {
                 />
             )}
 
+            {/* Overlay Card - Right Side Container */}
+            <div className="absolute inset-0 z-30 flex items-center justify-end p-6 pointer-events-none">
+                <div className="pointer-events-auto max-w-md w-full">
+                    <ManufacturingOverlay overlay={overlay} onDismiss={handleDismissOverlay} />
+                </div>
+            </div>
+
             {/* Minimalist Control Bar Overlay */}
             {!isLoading && (
                 <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-40">
@@ -112,3 +167,4 @@ export function AvatarRoom() {
         </div>
     );
 }
+
