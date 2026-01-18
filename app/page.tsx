@@ -2,15 +2,23 @@
 
 import { PreJoin, LiveKitRoom } from "@livekit/components-react";
 import { useRouter } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { AvatarRoom } from "@/components/AvatarRoom";
 
 export default function Home() {
   const router = useRouter();
   const [token, setToken] = useState<string | null>(null);
   const [roomName, setRoomName] = useState<string | null>(null);
+  const joiningRef = useRef(false);
 
   const handleJoin = useCallback(async (values: { username: string }) => {
+    // Prevent multiple simultaneous join requests
+    if (joiningRef.current) {
+      console.log("Join already in progress, skipping duplicate request");
+      return;
+    }
+    joiningRef.current = true;
+
     const room = "cara-room";
     setRoomName(room);
     try {
@@ -28,9 +36,11 @@ export default function Home() {
 
       } else {
         console.error("No token received", data);
+        joiningRef.current = false;
       }
     } catch (e) {
       console.error("Error fetching token:", e);
+      joiningRef.current = false;
     }
   }, []);
 
@@ -43,6 +53,7 @@ export default function Home() {
     }
     setToken(null);
     setRoomName(null);
+    joiningRef.current = false;
   }, [roomName]);
 
   return (

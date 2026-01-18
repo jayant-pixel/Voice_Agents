@@ -189,7 +189,7 @@ async def knowledge_lookup(
 async def show_temperature_profile(
     material: str,
     machine: str,
-    zones: dict
+    zones_json: str
 ) -> str:
     """
     Display temperature profile overlay for machine setup.
@@ -198,24 +198,15 @@ async def show_temperature_profile(
     Args:
         material: Material type (e.g., "ETFE", "FEP", "PFA", "PVC")
         machine: Machine identifier (e.g., "ROSENDAHL TPL/M/60", "WINDSOR TPL/M/43")
-        zones: Dictionary of zone temperatures. Example:
-               {
-                   "barrel": {"Z1": "280°C", "Z2": "290°C", "Z3": "310°C", "Z4": "330°C"},
-                   "head": {"Flange": "340°C", "H1": "350°C", "H2": "360°C", "Die": "370°C"},
-                   "auxiliary": {
-                       "Water": "40°C ±10°C",
-                       "Gap": "0.5-1.5 meters",
-                       "Pre-heater": "20-60%",
-                       "Current": "10-15A"
-                   },
-                   "tolerance": "±20°C",
-                   "heating_time": "45-60 minutes"
-               }
+        zones_json: JSON string of zone temperatures. Example:
+               {"barrel": {"Z1": "280C", "Z2": "290C"}, "head": {"H1": "350C"}, "tolerance": "±20C"}
     
     Returns:
         Confirmation that overlay was displayed
     """
     try:
+        zones = json.loads(zones_json)
+        
         # Flatten zones into rows for table display
         rows = []
         
@@ -258,6 +249,9 @@ async def show_temperature_profile(
         
         return "Temperature profile displayed on screen" if success else "Failed to display overlay"
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid zones JSON: {e}")
+        return f"Error: Invalid zones format"
     except Exception as e:
         logger.error(f"Temperature profile overlay error: {e}")
         return f"Error displaying temperature profile: {str(e)}"
@@ -265,8 +259,8 @@ async def show_temperature_profile(
 @llm.function_tool
 async def show_corrective_action(
     issue: str,
-    steps: list,
-    safety_limits: dict = None
+    steps_json: str,
+    safety_limits_json: str = ""
 ) -> str:
     """
     Display step-by-step corrective action procedure.
@@ -274,24 +268,16 @@ async def show_corrective_action(
     
     Args:
         issue: Description of the issue being corrected (e.g., "Screw Speed Mismatch")
-        steps: List of action steps. Each step is a dict with:
-               {
-                   "number": 1,
-                   "action": "Reduce screw speed",
-                   "details": [
-                       "From 31 to 28 RPM (-3 RPM total)",
-                       "Method: 1 RPM per step",
-                       "Wait: 5 minutes between steps"
-                   ]
-               }
-               Maximum 4 steps, 3-4 details per step
-        safety_limits: Optional dict of critical limits to display:
-                      {"Screw Speed": "25-35 RPM", "Ampere Load": "<85%", "Temperature": "No change"}
+        steps_json: JSON array of steps. Example: [{"number": 1, "action": "Reduce speed", "details": ["From 31 to 28 RPM"]}]
+        safety_limits_json: Optional JSON object of limits. Example: {"Screw Speed": "25-35 RPM"}
     
     Returns:
         Confirmation that overlay was displayed
     """
     try:
+        steps = json.loads(steps_json)
+        safety_limits = json.loads(safety_limits_json) if safety_limits_json else None
+        
         # Format steps (max 4)
         formatted_steps = []
         for step in steps[:4]:
@@ -322,6 +308,9 @@ async def show_corrective_action(
         
         return "Corrective action plan displayed on screen" if success else "Failed to display overlay"
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in corrective action: {e}")
+        return f"Error: Invalid step format"
     except Exception as e:
         logger.error(f"Corrective action overlay error: {e}")
         return f"Error displaying corrective action: {str(e)}"
@@ -331,7 +320,7 @@ async def show_quality_verification(
     parameter: str,
     target: str,
     tolerance: str,
-    measurements: list
+    measurements_json: str
 ) -> str:
     """
     Display quality verification results with pass/fail status.
@@ -339,23 +328,18 @@ async def show_quality_verification(
     
     Args:
         parameter: What was measured (e.g., "Output Dimension", "Strip Force")
-        target: Target value (e.g., "0.95mm", "40°C")
-        tolerance: Tolerance specification (e.g., "±0.02mm", "±10°C")
-        measurements: List of measurement dicts:
-                     [
-                         {"point": "Point 1", "reading": "0.94mm", "status": "pass"},
-                         {"point": "Point 2", "reading": "0.96mm", "status": "pass"},
-                         {"point": "Point 3", "reading": "0.95mm", "status": "pass"}
-                     ]
-                     Maximum 5 measurements
+        target: Target value (e.g., "0.95mm", "40C")
+        tolerance: Tolerance specification (e.g., "±0.02mm", "±10C")
+        measurements_json: JSON array of measurements. Example: [{"point": "Point 1", "reading": "0.94mm", "status": "pass"}]
     
     Returns:
         Confirmation that overlay was displayed with pass/fail verdict
     """
     try:
-        # Calculate acceptable range
-        # Extract numeric value and tolerance
         import re
+        measurements = json.loads(measurements_json)
+        
+        # Calculate acceptable range
         target_match = re.search(r'([\d.]+)', target)
         tolerance_match = re.search(r'±([\d.]+)', tolerance)
         
@@ -401,6 +385,9 @@ async def show_quality_verification(
         
         return f"Quality verification displayed: {verdict}" if success else "Failed to display overlay"
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid measurements JSON: {e}")
+        return f"Error: Invalid measurements format"
     except Exception as e:
         logger.error(f"Quality verification overlay error: {e}")
         return f"Error displaying quality verification: {str(e)}"
@@ -408,8 +395,8 @@ async def show_quality_verification(
 @llm.function_tool
 async def show_documentation_reminder(
     session_type: str,
-    auto_captured: dict,
-    manual_required: list
+    auto_captured_json: str,
+    manual_required_json: str
 ) -> str:
     """
     Display documentation checklist reminder.
@@ -417,25 +404,16 @@ async def show_documentation_reminder(
     
     Args:
         session_type: Type of session (e.g., "Troubleshooting", "Setup", "Quality Check")
-        auto_captured: Dict of automatically captured data:
-                      {
-                          "Date & Time": "16 Jan 2026, 10:45 AM",
-                          "Machine": "Extruder 2",
-                          "Material": "ETFE, 0.35mm wire",
-                          "Issue": "Dimension instability",
-                          "Action": "Speed adjusted 31→28 RPM",
-                          "Result": "Within spec (0.93-0.97mm)"
-                      }
-                      Maximum 8 items
-        manual_required: List of items operator must add manually:
-                        ["Operator signature", "Shift supervisor approval", 
-                         "Material waste (if any)", "Additional comments"]
-                        Maximum 5 items
+        auto_captured_json: JSON object of captured data. Example: {"Machine": "Extruder 2", "Action": "Speed adjusted"}
+        manual_required_json: JSON array of manual items. Example: ["Operator signature", "Supervisor approval"]
     
     Returns:
         Confirmation that overlay was displayed
     """
     try:
+        auto_captured = json.loads(auto_captured_json)
+        manual_required = json.loads(manual_required_json)
+        
         # Format auto-captured (max 8 items)
         auto_items = []
         for key, value in list(auto_captured.items())[:8]:
@@ -462,6 +440,9 @@ async def show_documentation_reminder(
         
         return "Documentation reminder displayed on screen" if success else "Failed to display overlay"
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in documentation reminder: {e}")
+        return f"Error: Invalid data format"
     except Exception as e:
         logger.error(f"Documentation overlay error: {e}")
         return f"Error displaying documentation reminder: {str(e)}"
@@ -471,8 +452,8 @@ async def show_knowledge_summary(
     problem: str,
     root_cause: str,
     solution: str,
-    key_learnings: list,
-    quick_reference: list = None
+    key_learnings_json: str,
+    quick_reference_json: str = ""
 ) -> str:
     """
     Display learning summary at end of troubleshooting session.
@@ -482,25 +463,16 @@ async def show_knowledge_summary(
         problem: Problem statement (1-2 sentences, max 120 chars)
         root_cause: Root cause explanation (1-2 sentences, max 120 chars)
         solution: Solution applied (1-2 sentences, max 120 chars)
-        key_learnings: List of learning point dicts (max 3):
-                      [
-                          {
-                              "title": "Speed Relationship",
-                              "lesson": "Screw↑ + Line same = Oversize. Always maintain proportional ratio."
-                          },
-                          {
-                              "title": "Adjustment Protocol",
-                              "lesson": "Small steps + Wait 5 min + Verify before next adjustment."
-                          }
-                      ]
-        quick_reference: Optional list of quick tips (max 3):
-                        ["Oversize? → Check screw speed increased",
-                         "Undersize? → Check line speed increased"]
+        key_learnings_json: JSON array of learnings. Example: [{"title": "Speed", "lesson": "Maintain ratio"}]
+        quick_reference_json: Optional JSON array of tips. Example: ["Oversize? Check screw speed"]
     
     Returns:
         Confirmation that overlay was displayed
     """
     try:
+        key_learnings = json.loads(key_learnings_json)
+        quick_reference = json.loads(quick_reference_json) if quick_reference_json else None
+        
         # Format learnings (max 3, 2 lines each)
         formatted_learnings = []
         for i, learning in enumerate(key_learnings[:3], 1):
@@ -531,6 +503,9 @@ async def show_knowledge_summary(
         
         return "Knowledge summary displayed on screen" if success else "Failed to display overlay"
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in knowledge summary: {e}")
+        return f"Error: Invalid data format"
     except Exception as e:
         logger.error(f"Knowledge summary overlay error: {e}")
         return f"Error displaying knowledge summary: {str(e)}"

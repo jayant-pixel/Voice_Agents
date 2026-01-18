@@ -39,30 +39,34 @@ export function ManufacturingOverlay({ overlay, onDismiss }: ManufacturingOverla
             className={`
                 fixed top-1/2 right-8 -translate-y-1/2
                 w-[750px] max-w-[90vw] max-h-[600px]
-                bg-white border-2 border-gray-800
-                shadow-[8px_8px_0px_0px_rgba(0,0,0,0.3)]
+                bg-white border-2 border-black
+                shadow-[6px_6px_0px_0px_#000]
                 flex flex-col overflow-hidden
                 transition-all duration-300 ease-out
                 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'}
             `}
             style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                fontFamily: 'monospace, "Courier New", Courier'
             }}
         >
-            {/* Header - 60px height */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 border-b-2 border-gray-800 flex-shrink-0">
+            {/* Header - Pink accent matching global theme */}
+            <div
+                className="text-black px-6 py-3 border-b-2 border-black flex-shrink-0"
+                style={{ backgroundColor: 'var(--pink-accent, #FF0055)' }}
+            >
                 <div className="flex justify-between items-start">
                     <div className="flex-1">
-                        <h3 className="text-lg font-bold tracking-wide">
+                        <h3 className="text-lg font-bold tracking-wide uppercase">
                             {overlay.title}
                         </h3>
                         {overlay.subtitle && (
-                            <p className="text-sm mt-0.5 opacity-90">{overlay.subtitle}</p>
+                            <p className="text-sm mt-0.5 opacity-80">{overlay.subtitle}</p>
                         )}
                     </div>
                     <button
                         onClick={handleDismiss}
-                        className="ml-4 w-7 h-7 flex items-center justify-center bg-white text-gray-800 hover:bg-gray-100 transition-colors font-bold text-lg rounded"
+                        className="ml-4 w-7 h-7 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition-colors font-bold text-lg"
+                        style={{ boxShadow: '2px 2px 0px 0px rgba(0,0,0,0.3)' }}
                         aria-label="Close overlay"
                     >
                         ×
@@ -75,11 +79,11 @@ export function ManufacturingOverlay({ overlay, onDismiss }: ManufacturingOverla
                 {renderContent(overlay)}
             </div>
 
-            {/* Footer - 50px height */}
+            {/* Footer - Industrial style */}
             {overlay.source && (
-                <div className="px-6 py-3 border-t-2 border-gray-200 bg-white flex-shrink-0">
-                    <p className="text-xs text-gray-600">
-                        <span className="font-semibold">Reference:</span> {overlay.source}
+                <div className="px-6 py-3 border-t-2 border-black bg-white flex-shrink-0">
+                    <p className="text-xs text-black uppercase tracking-wide">
+                        <span className="font-bold">Reference:</span> {overlay.source}
                     </p>
                 </div>
             )}
@@ -119,13 +123,13 @@ function TemperatureProfileContent({ data }: { data: Record<string, unknown> }) 
             {/* Temperature Table - Max 8 rows */}
             {rows.length > 0 && (
                 <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-2">Temperature Zones</h4>
-                    <table className="w-full text-sm border-2 border-gray-300">
-                        <thead className="bg-blue-600 text-white">
+                    <h4 className="text-base font-bold text-black mb-2 uppercase tracking-wide">Temperature Zones</h4>
+                    <table className="w-full text-sm border-2 border-black">
+                        <thead style={{ backgroundColor: 'var(--pink-accent, #FF0055)' }}>
                             <tr>
-                                <th className="px-3 py-2 text-left font-semibold border-r border-gray-400">Zone</th>
-                                <th className="px-3 py-2 text-left font-semibold border-r border-gray-400">Temperature</th>
-                                <th className="px-3 py-2 text-left font-semibold">Section</th>
+                                <th className="px-3 py-2 text-left font-bold text-black border-r border-black">Zone</th>
+                                <th className="px-3 py-2 text-left font-bold text-black border-r border-black">Temperature</th>
+                                <th className="px-3 py-2 text-left font-bold text-black">Section</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white">
@@ -143,8 +147,8 @@ function TemperatureProfileContent({ data }: { data: Record<string, unknown> }) 
 
             {/* Auxiliary Parameters - Max 6 items */}
             {auxiliary && (
-                <div className="bg-blue-50 border-l-4 border-blue-600 p-4">
-                    <h4 className="text-base font-bold text-gray-900 mb-2">Auxiliary Settings</h4>
+                <div className="bg-pink-50 border-l-4 p-4" style={{ borderColor: 'var(--pink-accent, #FF0055)' }}>
+                    <h4 className="text-base font-bold text-black mb-2 uppercase">Auxiliary Settings</h4>
                     <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
                         {auxiliary}
                     </div>
@@ -172,8 +176,8 @@ function CorrectiveActionContent({ data }: { data: Record<string, unknown> }) {
 
     return (
         <div className="space-y-4">
-            <div className="bg-blue-50 border-l-4 border-blue-600 p-3">
-                <p className="text-sm font-semibold text-gray-900">RECOMMENDED SOLUTION</p>
+            <div className="bg-pink-50 border-l-4 p-3" style={{ borderColor: 'var(--pink-accent, #FF0055)' }}>
+                <p className="text-sm font-bold text-black uppercase">Recommended Solution</p>
             </div>
 
             {/* Steps - Max 4 steps */}
@@ -229,13 +233,13 @@ function QualityVerificationContent({ data }: { data: Record<string, unknown> })
             {/* Measurements Table - Max 5 rows */}
             {measurements.length > 0 && (
                 <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-2">Measurements</h4>
-                    <table className="w-full text-sm border-2 border-gray-300">
-                        <thead className="bg-green-600 text-white">
+                    <h4 className="text-base font-bold text-black mb-2 uppercase">Measurements</h4>
+                    <table className="w-full text-sm border-2 border-black">
+                        <thead style={{ backgroundColor: 'var(--pink-accent, #FF0055)' }}>
                             <tr>
-                                <th className="px-3 py-2 text-left font-semibold border-r border-gray-400">Point</th>
-                                <th className="px-3 py-2 text-left font-semibold border-r border-gray-400">Reading</th>
-                                <th className="px-3 py-2 text-left font-semibold">Status</th>
+                                <th className="px-3 py-2 text-left font-bold text-black border-r border-black">Point</th>
+                                <th className="px-3 py-2 text-left font-bold text-black border-r border-black">Reading</th>
+                                <th className="px-3 py-2 text-left font-bold text-black">Status</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white">
@@ -245,8 +249,8 @@ function QualityVerificationContent({ data }: { data: Record<string, unknown> })
                                     <td className="px-3 py-2 font-semibold border-r border-gray-200">{measurement.reading}</td>
                                     <td className="px-3 py-2">
                                         <span className={`inline-flex items-center px-2 py-1 text-xs font-bold rounded ${measurement.status === 'pass'
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-red-100 text-red-800'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-red-100 text-red-800'
                                             }`}>
                                             {measurement.status === 'pass' ? '✓ PASS' : '✗ FAIL'}
                                         </span>
@@ -266,8 +270,8 @@ function QualityVerificationContent({ data }: { data: Record<string, unknown> })
             {/* Verdict */}
             {verdict && (
                 <div className={`p-4 border-2 text-center ${verdict.includes('WITHIN')
-                        ? 'bg-green-50 border-green-500'
-                        : 'bg-red-50 border-red-500'
+                    ? 'bg-green-50 border-green-500'
+                    : 'bg-red-50 border-red-500'
                     }`}>
                     <p className="text-lg font-bold text-gray-900">
                         {verdictIcon} {verdict}
@@ -329,16 +333,16 @@ function DocumentationChecklistContent({ data }: { data: Record<string, unknown>
             {/* Where to log - 2 lines max */}
             {(locationDigital || locationPaper) && (
                 <div>
-                    <h4 className="text-base font-bold text-gray-900 mb-2">📍 WHERE TO LOG</h4>
-                    <div className="bg-blue-50 border-l-4 border-blue-600 p-3 space-y-1">
+                    <h4 className="text-base font-bold text-black mb-2 uppercase">📍 Where To Log</h4>
+                    <div className="bg-pink-50 border-l-4 p-3 space-y-1" style={{ borderColor: 'var(--pink-accent, #FF0055)' }}>
                         {locationDigital && (
                             <p className="text-sm text-gray-800">
-                                <span className="font-semibold">Digital:</span> {locationDigital}
+                                <span className="font-bold">Digital:</span> {locationDigital}
                             </p>
                         )}
                         {locationPaper && (
                             <p className="text-sm text-gray-800">
-                                <span className="font-semibold">Paper:</span> {locationPaper}
+                                <span className="font-bold">Paper:</span> {locationPaper}
                             </p>
                         )}
                     </div>
@@ -397,8 +401,8 @@ function KnowledgeSummaryContent({ data }: { data: Record<string, unknown> }) {
                     <h4 className="text-base font-bold text-gray-900 mb-2">KEY LEARNING POINTS</h4>
                     <div className="space-y-3">
                         {learnings.slice(0, 3).map((learning, index) => (
-                            <div key={index} className="bg-purple-50 border-l-4 border-purple-600 p-3">
-                                <p className="text-sm font-bold text-gray-900 mb-1">
+                            <div key={index} className="bg-pink-50 border-l-4 p-3" style={{ borderColor: 'var(--pink-accent, #FF0055)' }}>
+                                <p className="text-sm font-bold text-black mb-1">
                                     {learning.number} {learning.title}
                                 </p>
                                 <p className="text-sm text-gray-700 leading-relaxed">{learning.lesson}</p>
@@ -410,8 +414,8 @@ function KnowledgeSummaryContent({ data }: { data: Record<string, unknown> }) {
 
             {/* Quick Reference - 3 lines max */}
             {quickReference && (
-                <div className="bg-blue-50 border-2 border-blue-400 p-3">
-                    <h4 className="text-sm font-bold text-gray-900 mb-1">⚡ QUICK REFERENCE</h4>
+                <div className="bg-pink-50 border-2 p-3" style={{ borderColor: 'var(--pink-accent, #FF0055)' }}>
+                    <h4 className="text-sm font-bold text-black mb-1 uppercase">⚡ Quick Reference</h4>
                     <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">{quickReference}</p>
                 </div>
             )}
