@@ -696,4 +696,5 @@ async def entrypoint(ctx: JobContext):
     )
 
 if __name__ == "__main__":
+    # num_idle_processes=2 for lighter dev mode, increase for production
     cli.run_app(server)

@@ -148,14 +148,15 @@ export default function Home() {
               />
 
               {/* PreJoin Component - overlaid on the image */}
-              <div className="prejoin-overlay">
+              {/* suppressHydrationWarning prevents errors from browser extensions (e.g., password managers) that inject attributes */}
+              <div className="prejoin-overlay" suppressHydrationWarning>
                 <PreJoin
                   onSubmit={handleJoin}
                   defaults={{
                     videoEnabled: false,
                     audioEnabled: true,
                   }}
-                  persistUserChoices={true}
+                  persistUserChoices={false}
                 />
               </div>
             </div>
