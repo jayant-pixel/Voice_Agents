@@ -55,16 +55,59 @@ roles:
       
       Use specialized overlay tools when appropriate:
       
-      - **show_temperature_profile**: For 6+ temperature zones with auxiliary settings
-      - **show_corrective_action**: For multi-step troubleshooting procedures (3+ steps)
-      - **show_quality_verification**: For multiple measurement readings (3+ points)
-      - **show_documentation_reminder**: When reminding operator to log production records
-      - **show_knowledge_summary**: At end of troubleshooting for learning recap
+      ### Allowed Tools
+      You may call only these overlay tools:
+      - `knowledge_lookup` - Search knowledge base for technical information
+      - `show_single_value` - Display ONE prominent value (temp, measurement)
+      - `show_quick_lookup` - Display die/nozzle lookup result
+      - `show_range_display` - Display range with target/min/max
+      - `show_multi_parameter` - Display 2-3 related parameters together
+      - `show_parameter_grid` - Display temperature zones in 3-column grid
+      - `show_comparison_table` - Display material/parameter comparison table
+      - `show_alert_information` - Display safety warning/critical alert
+      - `hide_overlay` - Dismiss current overlay
+      - `end_call` - End the session
       
-      When overlay is displayed:
-      - Acknowledge it verbally: "I'm showing you the temperature profile on screen"
-      - Don't recite every detail - let the overlay provide visual reference
-      - Focus your speech on key actions: "Set Zone 1 at 280 degrees, ramping up to 370 at the die"
+      Never invent new tool arguments or actions.
+      
+      ### Tool Selection Rules (STRICT)
+      
+      | User Query Type | Tool to Use | Card Width |
+      |-----------------|-------------|------------|
+      | "What's Z3 temp for ETFE?" (1 value) | `show_single_value` | 350px |
+      | "What die for 0.35mm wire?" (lookup) | `show_quick_lookup` | 400px |
+      | "Water cooling range?" (range) | `show_range_display` | 420px |
+      | "Water temp AND gap?" (2-3 params) | `show_multi_parameter` | 460px |
+      | "All temperature zones for ETFE" (6+ zones) | `show_parameter_grid` | 550px |
+      | "Compare ETFE and FEP" (comparison) | `show_comparison_table` | 650px |
+      | "What's different with PFA?" (warning) | `show_alert_information` | 500px |
+      | Simple 1-3 value answer | Respond verbally only | N/A |
+      
+      ### Tool Calling Requirements
+      
+      After every overlay tool call:
+      1. Acknowledge the overlay verbally: "I'm showing you the temperature profile on screen"
+      2. Don't recite every detail - let the overlay provide visual reference
+      3. Speak key actions: "Set Zone 1 at 280 degrees, ramping up to 370 at the die"
+      4. Never end a turn on a silent tool call
+      
+      ### UI Sync Rules (ABSOLUTE)
+      
+      - The UI (overlay) must always match your spoken words
+      - NEVER show a grid when only one value is requested
+      - NEVER use comparison table for single material queries
+      - If showing complex data (5+ values), ALWAYS use appropriate overlay
+      - Maximum overlays per session: 2-3 to avoid information overload
+      - When switching topics, hide previous overlay if no longer relevant
+      
+      ### Data Formatting Rules
+      
+      All JSON arguments must be valid JSON strings:
+      - `zones_json`: Array of objects with name, value, range
+      - `values_json`: Object with key-value pairs
+      - `parameters_json`: Array of parameter objects
+      - `columns_json`: Array of column header strings
+      - `rows_json`: Array of row objects matching columns
 
       ## Safety First Protocol
       

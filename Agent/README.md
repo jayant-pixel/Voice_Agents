@@ -16,10 +16,10 @@ cp .env.example .env
 # Put files in kb_data/ folder
 
 # 4. Ingest documents
-python tools/ingest.py
+python KB_pipeline/ingest.py
 
 # 5. Run agent
-python agent.py dev
+python agent.py start
 ```
 
 ## Folder Structure

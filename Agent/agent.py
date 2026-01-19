@@ -2,7 +2,6 @@ import os
 import json
 import logging
 import yaml
-import base64
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -75,7 +74,7 @@ NAME, GREETING, INSTRUCTIONS, SYSTEM_GUIDELINES = load_persona()
 # OVERLAY HELPER FUNCTIONS
 # -------------------------
 
-async def send_overlay(overlay_type: str, title: str, data: dict, subtitle: str = "", source: str = ""):
+async def send_overlay(layout_type: str, title: str, data: dict, context: str = "", source: str = ""):
     """Helper function to send overlay to frontend"""
     try:
         room = get_job_context().room
@@ -86,9 +85,9 @@ async def send_overlay(overlay_type: str, title: str, data: dict, subtitle: str 
             return False
         
         payload = json.dumps({
-            "type": overlay_type,
+            "layoutType": layout_type,
             "title": title,
-            "subtitle": subtitle,
+            "context": context,
             "source": source,
             "data": data
         })
@@ -100,22 +99,12 @@ async def send_overlay(overlay_type: str, title: str, data: dict, subtitle: str 
             response_timeout=5.0,
         )
         
-        logger.info(f"Overlay sent: {overlay_type} - {title}")
+        logger.info(f"Overlay sent: {layout_type} - {title}")
         return True
         
     except Exception as e:
         logger.error(f"Failed to send overlay: {e}")
         return False
-
-def should_show_overlay(data_points: int, has_table: bool = False, has_steps: bool = False) -> bool:
-    """Determine if overlay should be shown based on complexity"""
-    if data_points >= 5:
-        return True
-    if has_table and data_points >= 3:
-        return True
-    if has_steps and data_points >= 3:
-        return True
-    return False
 
 # -------------------------
 # KNOWLEDGE BASE TOOL
@@ -154,14 +143,8 @@ async def knowledge_lookup(
     
     Returns:
         Relevant technical information with document citations.
-        
-    Important: 
-    - Always cite document references in your response (e.g., "As per TPL/TD/28...")
-    - For complex data (5+ values, tables, procedures), consider using show_overlay tool
-    - For temperature profiles with 6+ zones, use show_temperature_profile tool instead
     """
     try:
-        # Add context type to query for better retrieval
         enhanced_query = f"[{context_type}] {query}" if context_type != "general" else query
         
         result = await kb_manager.query(enhanced_query, include_images=False)
@@ -169,10 +152,9 @@ async def knowledge_lookup(
         if not result.text:
             return f"No information found for query: {query}. Please rephrase or ask for related information."
         
-        # Format response with sources
         response = result.text
         if result.sources:
-            sources_str = ", ".join(result.sources[:3])  # Limit to top 3 sources
+            sources_str = ", ".join(result.sources[:3])
             response += f"\n\nReference: {sources_str}"
         
         return response
@@ -182,333 +164,383 @@ async def knowledge_lookup(
         return f"Error searching knowledge base: {str(e)}"
 
 # -------------------------
-# SPECIALIZED OVERLAY TOOLS
+# OVERLAY TOOLS - NEW SPEC
 # -------------------------
 
 @llm.function_tool
-async def show_temperature_profile(
-    material: str,
-    machine: str,
-    zones_json: str
+async def show_single_value(
+    title: str,
+    value: str,
+    label: str,
+    context: str = "",
+    source: str = "",
+    range: str = "",
+    tolerance: str = ""
 ) -> str:
     """
-    Display temperature profile overlay for machine setup.
-    Use this when providing temperature settings with 6+ zones.
+    Display a single prominent value (temperature, measurement, etc).
+    Use when answering questions about ONE specific parameter.
     
     Args:
-        material: Material type (e.g., "ETFE", "FEP", "PFA", "PVC")
-        machine: Machine identifier (e.g., "ROSENDAHL TPL/M/60", "WINDSOR TPL/M/43")
-        zones_json: JSON string of zone temperatures. Example:
-               {"barrel": {"Z1": "280C", "Z2": "290C"}, "head": {"H1": "350C"}, "tolerance": "±20C"}
+        title: Header title (e.g., "Z3 Temperature")
+        value: The main value to display (e.g., "310°C")
+        label: Label for the value (e.g., "Zone 3")
+        context: Material/machine info (e.g., "Material: ETFE")
+        source: Document reference (e.g., "TPL-TD-28")
+        range: Acceptable range (e.g., "290°C - 330°C")
+        tolerance: Tolerance value (e.g., "±20°C")
     
     Returns:
-        Confirmation that overlay was displayed
+        Confirmation message
+    """
+    try:
+        data = {
+            "value": value,
+            "label": label,
+            "range": range,
+            "tolerance": tolerance
+        }
+        
+        success = await send_overlay(
+            layout_type="single-value",
+            title=title,
+            context=context,
+            source=source,
+            data=data
+        )
+        
+        return "Single value displayed on screen" if success else "Failed to display overlay"
+        
+    except Exception as e:
+        logger.error(f"Single value overlay error: {e}")
+        return f"Error displaying value: {str(e)}"
+
+
+@llm.function_tool
+async def show_quick_lookup(
+    title: str,
+    wire_size: str,
+    values_json: str,
+    context: str = "",
+    source: str = "",
+    adjacent_json: str = ""
+) -> str:
+    """
+    Display a quick lookup result with die/nozzle specs.
+    Use for tooling questions like "What die for X wire?".
+    
+    Args:
+        title: Header title (e.g., "Die & Nozzle Selection")
+        wire_size: Wire size range (e.g., "0.3-0.35mm")
+        values_json: JSON object of values. Example: {"Die ID": "9 or 10", "Nozzle OD": "4.5", "Nozzle ID": "0.8 or 1"}
+        context: Additional context (e.g., "Wire Size: 0.35mm")
+        source: Document reference (e.g., "DDR Chart-3, Row 3")
+        adjacent_json: JSON array of context. Example: ["0.25-0.3mm: Same configuration", "0.35-0.4mm: Die 10"]
+    
+    Returns:
+        Confirmation message
+    """
+    try:
+        values = json.loads(values_json)
+        adjacent = json.loads(adjacent_json) if adjacent_json else []
+        
+        data = {
+            "wire_size": wire_size,
+            "values": values,
+            "adjacent": adjacent
+        }
+        
+        success = await send_overlay(
+            layout_type="quick-lookup",
+            title=title,
+            context=context,
+            source=source,
+            data=data
+        )
+        
+        return "Quick lookup displayed on screen" if success else "Failed to display overlay"
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in quick lookup: {e}")
+        return "Error: Invalid data format"
+    except Exception as e:
+        logger.error(f"Quick lookup overlay error: {e}")
+        return f"Error displaying lookup: {str(e)}"
+
+
+@llm.function_tool
+async def show_range_display(
+    title: str,
+    target: str,
+    minimum: str,
+    maximum: str,
+    context: str = "",
+    source: str = "",
+    tolerance: str = "",
+    notes_json: str = ""
+) -> str:
+    """
+    Display a range/specification with target value.
+    Use for questions about acceptable ranges and tolerances.
+    
+    Args:
+        title: Header title (e.g., "Water Cooling Temperature")
+        target: Target value (e.g., "40°C")
+        minimum: Minimum acceptable (e.g., "30°C")
+        maximum: Maximum acceptable (e.g., "50°C")
+        context: Material/machine info (e.g., "Material: ETFE | Machine: ROSENDAHL")
+        source: Document reference (e.g., "TPL-TD-28")
+        tolerance: Tolerance spec (e.g., "±10°C")
+        notes_json: JSON array of notes. Example: ["Gap to Hot Water Zone: 0.5 - 1.5 meters"]
+    
+    Returns:
+        Confirmation message
+    """
+    try:
+        notes = json.loads(notes_json) if notes_json else []
+        
+        data = {
+            "target": target,
+            "minimum": minimum,
+            "maximum": maximum,
+            "tolerance": tolerance,
+            "notes": notes
+        }
+        
+        success = await send_overlay(
+            layout_type="range-display",
+            title=title,
+            context=context,
+            source=source,
+            data=data
+        )
+        
+        return "Range display shown on screen" if success else "Failed to display overlay"
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in range display: {e}")
+        return "Error: Invalid data format"
+    except Exception as e:
+        logger.error(f"Range display overlay error: {e}")
+        return f"Error displaying range: {str(e)}"
+
+
+@llm.function_tool
+async def show_multi_parameter(
+    title: str,
+    parameters_json: str,
+    context: str = "",
+    source: str = "",
+    note: str = ""
+) -> str:
+    """
+    Display multiple related parameters together.
+    Use when showing 2-3 related settings (e.g., water temp AND gap distance).
+    
+    Args:
+        title: Header title (e.g., "Water System Settings")
+        parameters_json: JSON array of parameters. Example:
+            [{"name": "Water Cooling Temperature", "target": "40°C", "range": "30-50°C", "tolerance": "±10°C"},
+             {"name": "Gap Distance", "range": "0.5 - 1.5 meters"}]
+        context: Material/machine info (e.g., "Material: ETFE | ROSENDAHL")
+        source: Document reference (e.g., "TPL-TD-28")
+        note: Important note (e.g., "Water circulation must be ON during extrusion")
+    
+    Returns:
+        Confirmation message
+    """
+    try:
+        parameters = json.loads(parameters_json)
+        
+        data = {
+            "parameters": parameters[:4],  # Max 4 parameters
+            "note": note
+        }
+        
+        success = await send_overlay(
+            layout_type="multi-parameter",
+            title=title,
+            context=context,
+            source=source,
+            data=data
+        )
+        
+        return "Multi-parameter display shown on screen" if success else "Failed to display overlay"
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in multi-parameter: {e}")
+        return "Error: Invalid data format"
+    except Exception as e:
+        logger.error(f"Multi-parameter overlay error: {e}")
+        return f"Error displaying parameters: {str(e)}"
+
+
+@llm.function_tool
+async def show_parameter_grid(
+    title: str,
+    zones_json: str,
+    context: str = "",
+    source: str = "",
+    auxiliary_json: str = "",
+    notes_json: str = ""
+) -> str:
+    """
+    Display temperature zones in a grid layout (2-3 columns).
+    Use for showing all temperature zones for a material/machine.
+    
+    Args:
+        title: Header title (e.g., "ETFE Temperature Profile")
+        zones_json: JSON array of zones. Example:
+            [{"name": "Z1", "value": "280°C", "range": "260-300"},
+             {"name": "Z2", "value": "290°C", "range": "270-310"}]
+        context: Machine info (e.g., "Machine: ROSENDAHL")
+        source: Document reference (e.g., "TPL-TD-28, Page 1")
+        auxiliary_json: JSON array of auxiliary settings. Example: ["Water Cooling: 40°C (±10°C)", "Tolerance: ±20°C"]
+        notes_json: JSON array of notes. Example: ["Gap Distance: 0.5-1.5 meters"]
+    
+    Returns:
+        Confirmation message
     """
     try:
         zones = json.loads(zones_json)
-        
-        # Flatten zones into rows for table display
-        rows = []
-        
-        # Barrel zones
-        if "barrel" in zones:
-            for zone, temp in zones["barrel"].items():
-                rows.append({"zone": zone, "temperature": temp, "section": "Barrel"})
-        
-        # Head zones
-        if "head" in zones:
-            for zone, temp in zones["head"].items():
-                rows.append({"zone": zone, "temperature": temp, "section": "Head"})
-        
-        # Auxiliary parameters
-        aux_text = []
-        if "auxiliary" in zones:
-            for param, value in zones["auxiliary"].items():
-                aux_text.append(f"• {param}: {value}")
-        
-        # Notes
-        notes = []
-        if "tolerance" in zones:
-            notes.append(f"⚠️ Tolerance: {zones['tolerance']} on all zones")
-        if "heating_time" in zones:
-            notes.append(f"⏱ Heating time: {zones['heating_time']}")
+        auxiliary = json.loads(auxiliary_json) if auxiliary_json else []
+        notes = json.loads(notes_json) if notes_json else []
         
         data = {
-            "rows": rows[:8],  # Max 8 rows per spec
-            "auxiliary": "\n".join(aux_text[:6]),  # Max 6 aux items
-            "notes": "\n".join(notes[:3])  # Max 3 notes
+            "zones": zones[:9],  # Max 9 zones (3x3 grid)
+            "auxiliary": auxiliary[:6],
+            "notes": notes[:3]
         }
         
         success = await send_overlay(
-            overlay_type="temperature-profile",
-            title=f"{material} Temperature Profile",
-            subtitle=f"Machine: {machine}",
-            source="TPL/TD/28 Rev 08/02",
+            layout_type="parameter-grid",
+            title=title,
+            context=context,
+            source=source,
             data=data
         )
         
-        return "Temperature profile displayed on screen" if success else "Failed to display overlay"
+        return "Temperature grid displayed on screen" if success else "Failed to display overlay"
         
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid zones JSON: {e}")
-        return f"Error: Invalid zones format"
+        logger.error(f"Invalid JSON in parameter grid: {e}")
+        return "Error: Invalid data format"
     except Exception as e:
-        logger.error(f"Temperature profile overlay error: {e}")
-        return f"Error displaying temperature profile: {str(e)}"
+        logger.error(f"Parameter grid overlay error: {e}")
+        return f"Error displaying grid: {str(e)}"
+
 
 @llm.function_tool
-async def show_corrective_action(
-    issue: str,
-    steps_json: str,
-    safety_limits_json: str = ""
+async def show_comparison_table(
+    title: str,
+    columns_json: str,
+    rows_json: str,
+    context: str = "",
+    source: str = "",
+    analysis: str = "",
+    additional_json: str = ""
 ) -> str:
     """
-    Display step-by-step corrective action procedure.
-    Use this when providing multi-step troubleshooting solutions (3+ steps).
+    Display a comparison table for materials or parameters.
+    Use when comparing two or more materials/settings.
     
     Args:
-        issue: Description of the issue being corrected (e.g., "Screw Speed Mismatch")
-        steps_json: JSON array of steps. Example: [{"number": 1, "action": "Reduce speed", "details": ["From 31 to 28 RPM"]}]
-        safety_limits_json: Optional JSON object of limits. Example: {"Screw Speed": "25-35 RPM"}
+        title: Header title (e.g., "Temperature Comparison")
+        columns_json: JSON array of column headers. Example: ["Zone", "ETFE", "FEP", "Status"]
+        rows_json: JSON array of row objects. Example:
+            [{"Zone": "Z1", "ETFE": "280°C", "FEP": "280°C", "Status": "Same ✓"},
+             {"Zone": "Z2", "ETFE": "290°C", "FEP": "290°C", "Status": "Same ✓"}]
+        context: Context info (e.g., "ETFE vs FEP | Machine: ROSENDAHL")
+        source: Document reference (e.g., "TPL-TD-28")
+        analysis: Analysis text (e.g., "All temperature parameters are identical.")
+        additional_json: JSON array of notes. Example: ["ETFE: 40°C (±10°C)", "FEP: 40°C (±10°C) ✓ Same"]
     
     Returns:
-        Confirmation that overlay was displayed
+        Confirmation message
     """
     try:
-        steps = json.loads(steps_json)
-        safety_limits = json.loads(safety_limits_json) if safety_limits_json else None
-        
-        # Format steps (max 4)
-        formatted_steps = []
-        for step in steps[:4]:
-            formatted_steps.append({
-                "number": step.get("number", len(formatted_steps) + 1),
-                "action": step.get("action", ""),
-                "details": step.get("details", [])[:4]  # Max 4 details per step
-            })
-        
-        # Format safety limits (single line with separators)
-        safety_text = ""
-        if safety_limits:
-            safety_items = [f"{k}: {v}" for k, v in list(safety_limits.items())[:4]]
-            safety_text = " | ".join(safety_items)
+        columns = json.loads(columns_json)
+        rows = json.loads(rows_json)
+        additional = json.loads(additional_json) if additional_json else []
         
         data = {
-            "steps": formatted_steps,
-            "safety_limits": safety_text
+            "columns": columns[:5],  # Max 5 columns
+            "rows": rows[:10],  # Max 10 rows
+            "analysis": analysis,
+            "additional": additional[:3]
         }
         
         success = await send_overlay(
-            overlay_type="corrective-action",
-            title="Corrective Action Plan",
-            subtitle=f"Issue: {issue}",
-            source="Process Control SOP",
+            layout_type="comparison-table",
+            title=title,
+            context=context,
+            source=source,
             data=data
         )
         
-        return "Corrective action plan displayed on screen" if success else "Failed to display overlay"
+        return "Comparison table displayed on screen" if success else "Failed to display overlay"
         
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in corrective action: {e}")
-        return f"Error: Invalid step format"
+        logger.error(f"Invalid JSON in comparison table: {e}")
+        return "Error: Invalid data format"
     except Exception as e:
-        logger.error(f"Corrective action overlay error: {e}")
-        return f"Error displaying corrective action: {str(e)}"
+        logger.error(f"Comparison table overlay error: {e}")
+        return f"Error displaying comparison: {str(e)}"
+
 
 @llm.function_tool
-async def show_quality_verification(
-    parameter: str,
-    target: str,
-    tolerance: str,
-    measurements_json: str
+async def show_alert_information(
+    title: str,
+    warning: str,
+    context: str = "",
+    source: str = "",
+    donts_json: str = "",
+    dos_json: str = "",
+    reference: str = ""
 ) -> str:
     """
-    Display quality verification results with pass/fail status.
-    Use this when operator provides multiple measurement readings (3+ points).
+    Display a safety/warning alert with critical information.
+    Use for material-specific warnings, safety limits, or restrictions.
     
     Args:
-        parameter: What was measured (e.g., "Output Dimension", "Strip Force")
-        target: Target value (e.g., "0.95mm", "40C")
-        tolerance: Tolerance specification (e.g., "±0.02mm", "±10C")
-        measurements_json: JSON array of measurements. Example: [{"point": "Point 1", "reading": "0.94mm", "status": "pass"}]
+        title: Header title (e.g., "Material-Specific Requirements")
+        warning: Main warning message (e.g., "DO NOT USE WATER COOLING")
+        context: Material info (e.g., "Material: PFA")
+        source: Document reference (e.g., "Inner Extrusion WI, Note 9")
+        donts_json: JSON array of don'ts. Example: ["Water circulation must be OFF", "Gap distance does not apply"]
+        dos_json: JSON array of dos. Example: ["Temperature: 320-390°C (higher)", "Pre-heater: 80-100%"]
+        reference: Reference quote (e.g., "For PFA insulation don't use water")
     
     Returns:
-        Confirmation that overlay was displayed with pass/fail verdict
+        Confirmation message
     """
     try:
-        import re
-        measurements = json.loads(measurements_json)
-        
-        # Calculate acceptable range
-        target_match = re.search(r'([\d.]+)', target)
-        tolerance_match = re.search(r'±([\d.]+)', tolerance)
-        
-        range_text = ""
-        if target_match and tolerance_match:
-            target_val = float(target_match.group(1))
-            tol_val = float(tolerance_match.group(1))
-            unit = target.replace(target_match.group(1), "").strip()
-            lower = target_val - tol_val
-            upper = target_val + tol_val
-            range_text = f"{lower:.2f} - {upper:.2f}{unit}"
-        
-        # Determine overall verdict
-        all_pass = all(m.get("status") == "pass" for m in measurements)
-        verdict = "ALL WITHIN SPECIFICATION" if all_pass else "OUT OF SPECIFICATION"
-        verdict_icon = "✅" if all_pass else "❌"
-        
-        # Calculate statistics if numeric
-        try:
-            readings = [float(re.search(r'([\d.]+)', m["reading"]).group(1)) for m in measurements]
-            avg = sum(readings) / len(readings)
-            range_val = max(readings) - min(readings)
-            stats_text = f"Average: {avg:.2f} | Range: {range_val:.2f}"
-        except:
-            stats_text = ""
+        donts = json.loads(donts_json) if donts_json else []
+        dos = json.loads(dos_json) if dos_json else []
         
         data = {
-            "spec": f"Target: {target} | Tolerance: {tolerance}",
-            "range": f"Acceptable Range: {range_text}",
-            "measurements": measurements[:5],  # Max 5 measurements
-            "statistics": stats_text,
-            "verdict": verdict,
-            "verdict_icon": verdict_icon
+            "warning": warning,
+            "donts": donts[:5],
+            "dos": dos[:5],
+            "reference": reference
         }
         
         success = await send_overlay(
-            overlay_type="quality-verification",
-            title="Quality Verification",
-            subtitle=f"Parameter: {parameter}",
-            source="Quality Control SOP QC-001",
+            layout_type="alert-information",
+            title=title,
+            context=context,
+            source=source,
             data=data
         )
         
-        return f"Quality verification displayed: {verdict}" if success else "Failed to display overlay"
+        return "Alert displayed on screen" if success else "Failed to display overlay"
         
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid measurements JSON: {e}")
-        return f"Error: Invalid measurements format"
+        logger.error(f"Invalid JSON in alert: {e}")
+        return "Error: Invalid data format"
     except Exception as e:
-        logger.error(f"Quality verification overlay error: {e}")
-        return f"Error displaying quality verification: {str(e)}"
-
-@llm.function_tool
-async def show_documentation_reminder(
-    session_type: str,
-    auto_captured_json: str,
-    manual_required_json: str
-) -> str:
-    """
-    Display documentation checklist reminder.
-    Use this to remind operator what needs to be logged in production records.
-    
-    Args:
-        session_type: Type of session (e.g., "Troubleshooting", "Setup", "Quality Check")
-        auto_captured_json: JSON object of captured data. Example: {"Machine": "Extruder 2", "Action": "Speed adjusted"}
-        manual_required_json: JSON array of manual items. Example: ["Operator signature", "Supervisor approval"]
-    
-    Returns:
-        Confirmation that overlay was displayed
-    """
-    try:
-        auto_captured = json.loads(auto_captured_json)
-        manual_required = json.loads(manual_required_json)
-        
-        # Format auto-captured (max 8 items)
-        auto_items = []
-        for key, value in list(auto_captured.items())[:8]:
-            auto_items.append({"label": key, "value": value})
-        
-        # Manual items (max 5)
-        manual_items = manual_required[:5]
-        
-        data = {
-            "auto_captured": auto_items,
-            "manual_required": manual_items,
-            "location_digital": "Main HMI → Production Tab → Current Run",
-            "location_paper": "Paper form at Supervisor desk",
-            "deadline": "Complete before shift handover"
-        }
-        
-        success = await send_overlay(
-            overlay_type="documentation-checklist",
-            title="Documentation Required",
-            subtitle=f"Session: {session_type}",
-            source="SOP-DOC-001",
-            data=data
-        )
-        
-        return "Documentation reminder displayed on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in documentation reminder: {e}")
-        return f"Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Documentation overlay error: {e}")
-        return f"Error displaying documentation reminder: {str(e)}"
-
-@llm.function_tool
-async def show_knowledge_summary(
-    problem: str,
-    root_cause: str,
-    solution: str,
-    key_learnings_json: str,
-    quick_reference_json: str = ""
-) -> str:
-    """
-    Display learning summary at end of troubleshooting session.
-    Use this to provide educational recap for knowledge transfer.
-    
-    Args:
-        problem: Problem statement (1-2 sentences, max 120 chars)
-        root_cause: Root cause explanation (1-2 sentences, max 120 chars)
-        solution: Solution applied (1-2 sentences, max 120 chars)
-        key_learnings_json: JSON array of learnings. Example: [{"title": "Speed", "lesson": "Maintain ratio"}]
-        quick_reference_json: Optional JSON array of tips. Example: ["Oversize? Check screw speed"]
-    
-    Returns:
-        Confirmation that overlay was displayed
-    """
-    try:
-        key_learnings = json.loads(key_learnings_json)
-        quick_reference = json.loads(quick_reference_json) if quick_reference_json else None
-        
-        # Format learnings (max 3, 2 lines each)
-        formatted_learnings = []
-        for i, learning in enumerate(key_learnings[:3], 1):
-            formatted_learnings.append({
-                "number": f"{i}️⃣",
-                "title": learning.get("title", "")[:30],  # Max 30 chars for title
-                "lesson": learning.get("lesson", "")[:120]  # Max 120 chars
-            })
-        
-        # Quick reference (max 3 lines)
-        ref_text = "\n".join(quick_reference[:3]) if quick_reference else ""
-        
-        data = {
-            "problem": problem[:120],
-            "root_cause": root_cause[:120],
-            "solution": solution[:120],
-            "learnings": formatted_learnings,
-            "quick_reference": ref_text
-        }
-        
-        success = await send_overlay(
-            overlay_type="knowledge-summary",
-            title="Session Learning Summary",
-            subtitle="Key Takeaways",
-            source="Process Control Guide",
-            data=data
-        )
-        
-        return "Knowledge summary displayed on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in knowledge summary: {e}")
-        return f"Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Knowledge summary overlay error: {e}")
-        return f"Error displaying knowledge summary: {str(e)}"
+        logger.error(f"Alert overlay error: {e}")
+        return f"Error displaying alert: {str(e)}"
 
 # -------------------------
 # UTILITY TOOLS
@@ -584,11 +616,13 @@ class ThermopadsSupervisor(Agent):
             instructions=full_instructions,
             tools=[
                 knowledge_lookup,
-                show_temperature_profile,
-                show_corrective_action,
-                show_quality_verification,
-                show_documentation_reminder,
-                show_knowledge_summary,
+                show_single_value,
+                show_quick_lookup,
+                show_range_display,
+                show_multi_parameter,
+                show_parameter_grid,
+                show_comparison_table,
+                show_alert_information,
                 hide_overlay,
                 end_call,
             ],
