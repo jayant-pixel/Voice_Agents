@@ -13,11 +13,10 @@ Key improvements over v1:
 
 Modal URL Format:
     After `modal deploy main.py`, you get a single base URL:
-    https://<workspace>--chatterbox-tts-web-app.modal.run
+    https://<workspace>--chatterbox-tts-ttsservice-api.modal.run
     
     With routes:
     - POST /stream    - Streaming speech generation
-    - POST /speak     - Non-streaming speech generation  
     - GET  /health    - Health check
 
 Usage in LiveKit agent:
@@ -31,6 +30,23 @@ Usage in LiveKit agent:
     
     # Use in AgentSession
     session = AgentSession(tts=tts, ...)
+
+Tuning tips:
+    - General use: exaggeration=0.5, cfg_weight=0.5 works well for most prompts.
+    - Fast reference speaker: lower cfg_weight to ~0.3 to improve pacing.
+    - Expressive/dynamic: lower cfg_weight (~0.3) and increase exaggeration (~0.7+).
+      Higher exaggeration tends to speed up speech; reducing cfg_weight helps pacing.
+
+Available voices (from /voices):
+    - abigail_en_female (en, female)
+    - anaya_en_female (en, female)
+    - carlos_es_male (es, male)
+    - fatima_ar_female (ar, female)
+    - john_en_male (en, male)
+    - maria_es_female (es, female)
+    - omar_ar_male (ar, male)
+    - priya_hi_female (hi, female)
+    - raj_hi_male (hi, male)
 """
 
 from __future__ import annotations
@@ -65,6 +81,7 @@ class _TTSOptions:
     api_url: str
     voice: str
     language: str
+    style: str
     exaggeration: float
     cfg_weight: float
     temperature: float
@@ -73,9 +90,6 @@ class _TTSOptions:
 
     def get_stream_url(self) -> str:
         return f"{self.api_url}/stream"
-
-    def get_speak_url(self) -> str:
-        return f"{self.api_url}/speak"
 
     def get_health_url(self) -> str:
         return f"{self.api_url}/health"
@@ -94,11 +108,12 @@ class ChatterboxTTS(tts.TTS):
         api_url: str,
         voice: str = "default",
         language: str = "en",
+        style: str = "general",
         exaggeration: float = 0.5,
         cfg_weight: float = 0.5,
         temperature: float = 0.8,
         sample_rate: int = 24000,
-        chunk_size: int = 200,
+        chunk_size: int = 50,
         http_session: Optional[aiohttp.ClientSession] = None,
         tokenizer: NotGivenOr[tokenize.SentenceTokenizer] = NOT_GIVEN,
     ):
@@ -109,11 +124,12 @@ class ChatterboxTTS(tts.TTS):
             api_url: The base URL for your Modal Chatterbox TTS deployment.
             voice: Voice ID to use. Defaults to "default".
             language: Language code. Defaults to "en".
+            style: "general", "fast", or "expressive". Defaults to "general".
             exaggeration: Exaggeration level for prosody. Defaults to 0.5.
             cfg_weight: CFG weight for generation. Defaults to 0.5.
             temperature: Temperature for sampling. Defaults to 0.8.
             sample_rate: Audio sample rate in Hz. Defaults to 24000.
-            chunk_size: Streaming chunk size in samples. Defaults to 200.
+            chunk_size: Streaming chunk size in TOKENS. Defaults to 50.
             http_session: Optional aiohttp session to reuse.
             tokenizer: Optional sentence tokenizer. Uses basic tokenizer by default.
         """
@@ -126,10 +142,18 @@ class ChatterboxTTS(tts.TTS):
             num_channels=1,
         )
         
+        normalized_style = style.lower().strip()
+        if normalized_style == "fast":
+            cfg_weight = 0.3
+        elif normalized_style == "expressive":
+            exaggeration = 0.7
+            cfg_weight = 0.3
+
         self._opts = _TTSOptions(
             api_url=api_url.rstrip("/"),
             voice=voice,
             language=language,
+            style=normalized_style,
             exaggeration=exaggeration,
             cfg_weight=cfg_weight,
             temperature=temperature,
@@ -174,6 +198,7 @@ class ChatterboxTTS(tts.TTS):
         *,
         voice: NotGivenOr[str] = NOT_GIVEN,
         language: NotGivenOr[str] = NOT_GIVEN,
+        style: NotGivenOr[str] = NOT_GIVEN,
         exaggeration: NotGivenOr[float] = NOT_GIVEN,
         cfg_weight: NotGivenOr[float] = NOT_GIVEN,
         temperature: NotGivenOr[float] = NOT_GIVEN,
@@ -183,6 +208,14 @@ class ChatterboxTTS(tts.TTS):
             self._opts.voice = voice
         if is_given(language):
             self._opts.language = language
+        if is_given(style):
+            normalized_style = style.lower().strip()
+            self._opts.style = normalized_style
+            if normalized_style == "fast":
+                self._opts.cfg_weight = 0.3
+            elif normalized_style == "expressive":
+                self._opts.exaggeration = 0.7
+                self._opts.cfg_weight = 0.3
         if is_given(exaggeration):
             self._opts.exaggeration = exaggeration
         if is_given(cfg_weight):
@@ -196,8 +229,8 @@ class ChatterboxTTS(tts.TTS):
         *, 
         conn_options: APIConnectOptions = DEFAULT_API_CONNECT_OPTIONS
     ) -> "ChunkedStream":
-        """Synthesize speech from text (non-streaming)."""
-        return ChunkedStream(tts=self, input_text=text, conn_options=conn_options)
+        """Synthesize speech from text (non-streaming). NOT SUPPORTED."""
+        raise NotImplementedError("Chatterbox TTS only supports streaming. Use stream() instead.")
 
     def stream(
         self, 
@@ -210,85 +243,6 @@ class ChatterboxTTS(tts.TTS):
     async def aclose(self) -> None:
         """Clean up resources."""
         pass  # Session is managed by http_context
-
-
-class ChunkedStream(tts.ChunkedStream):
-    """Non-streaming TTS using the /speak endpoint."""
-
-    def __init__(
-        self, 
-        *, 
-        tts: ChatterboxTTS, 
-        input_text: str, 
-        conn_options: APIConnectOptions
-    ) -> None:
-        super().__init__(tts=tts, input_text=input_text, conn_options=conn_options)
-        self._tts = tts
-        self._opts = replace(tts._opts)
-
-    async def _run(self, output_emitter: tts.AudioEmitter) -> None:
-        """Execute the synthesis and emit audio."""
-        params = {
-            "text": self._input_text,
-            "language": self._opts.language,
-            "exaggeration": self._opts.exaggeration,
-        }
-        if self._opts.voice and self._opts.voice != "default":
-            params["voice"] = self._opts.voice
-
-        try:
-            async with self._tts._ensure_session().post(
-                self._opts.get_speak_url(),
-                params=params,
-                timeout=aiohttp.ClientTimeout(
-                    total=60, 
-                    sock_connect=self._conn_options.timeout
-                ),
-            ) as resp:
-                if resp.status != 200:
-                    error = await resp.text()
-                    raise APIStatusError(
-                        message=f"Chatterbox API error: {error}",
-                        status_code=resp.status,
-                        request_id=None,
-                        body=None
-                    )
-
-                output_emitter.initialize(
-                    request_id=utils.shortuuid(),
-                    sample_rate=self._opts.sample_rate,
-                    num_channels=1,
-                    mime_type="audio/pcm",
-                )
-                
-                # Start a segment before pushing audio (required by LiveKit)
-                output_emitter.start_segment(segment_id=utils.shortuuid())
-
-                # Parse WAV and extract PCM
-                data = await resp.read()
-                pcm_data = self._extract_pcm_from_wav(data)
-                output_emitter.push(pcm_data)
-                output_emitter.flush()
-
-        except asyncio.TimeoutError:
-            raise APITimeoutError() from None
-        except aiohttp.ClientResponseError as e:
-            raise APIStatusError(
-                message=e.message, 
-                status_code=e.status, 
-                request_id=None, 
-                body=None
-            ) from None
-        except APIStatusError:
-            raise
-        except Exception as e:
-            raise APIConnectionError() from e
-
-    def _extract_pcm_from_wav(self, wav_data: bytes) -> bytes:
-        """Extract raw PCM data from WAV file, skipping header."""
-        if len(wav_data) < 44:
-            return wav_data
-        return wav_data[44:]
 
 
 class SynthesizeStream(tts.SynthesizeStream):
@@ -382,21 +336,24 @@ class SynthesizeStream(tts.SynthesizeStream):
         request_id: str
     ) -> None:
         """Synthesize a text chunk and emit audio frames immediately."""
-        params = {
+        payload = {
             "text": text,
-            "language": self._opts.language,
             "exaggeration": self._opts.exaggeration,
+            "cfg_weight": self._opts.cfg_weight,
+            "temperature": self._opts.temperature,
             "chunk_size": self._opts.chunk_size,
         }
         if self._opts.voice and self._opts.voice != "default":
-            params["voice"] = self._opts.voice
+            payload["voice"] = self._opts.voice
+        if self._opts.language:
+            payload["language"] = self._opts.language
 
         logger.debug(f"Synthesizing: '{text[:50]}...' ({len(text)} chars)")
 
         try:
             async with self._tts._ensure_session().post(
                 self._opts.get_stream_url(),
-                params=params,
+                json=payload,
                 timeout=aiohttp.ClientTimeout(total=60),
             ) as response:
                 if response.status != 200:
