@@ -666,9 +666,10 @@ async def entrypoint(ctx: JobContext):
         stt=deepgram.STTv2(model="flux-general-en", eager_eot_threshold=0.4),
         llm=openai.LLM(model="gpt-4.1-mini-2025-04-14"),
         tts=ChatterboxTTS(
-            api_url="https://jayant--chatterbox-tts-web-app.modal.run",
+            api_url="https://jayant--chatterbox-tts-ttsservice-api.modal.run",
             voice="anaya_en_female",
             language="en",
+            style="general",
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
