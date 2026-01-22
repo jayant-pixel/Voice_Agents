@@ -22,31 +22,36 @@ python KB_pipeline/ingest.py
 python agent.py start
 ```
 
+## TTS (Cartesia)
+
+- Set `CARTESIA_API_KEY` in your `.env` (from https://play.cartesia.ai/keys).
+- Optional overrides (all via `.env`): `CARTESIA_MODEL`, `CARTESIA_VOICE`, `CARTESIA_LANGUAGE`, `CARTESIA_EMOTION`, `CARTESIA_SPEED`, `CARTESIA_VOLUME`.
+- If an override is not set, Cartesia defaults are used.
+
 ## Folder Structure
 
 ```
 Agent/
-├── agent.py              # Main agent logic & tools
-├── persona.yaml          # Agent personality & roles
-├── requirements.txt      # Python dependencies
-│
-├── KB_pipeline/          # 🧠 Knowledge Base System
-│   ├── kb_manager.py     # Core RAG logic
-│   ├── ingest.py         # Ingestion CLI
-│   ├── test_kb.py        # Testing CLI
-│   ├── kb_data/          # YOUR DOCUMENTS (put files here)
-│   ├── kb_store/         # Auto-generated index
-│   └── README.md         # Full Manual
-│
-├── chatterbox_plugin/    # Custom TTS plugin
-└── docs/                 # General docs
+|- agent.py              # Main agent logic & tools
+|- persona.yaml          # Agent personality & roles
+|- requirements.txt      # Python dependencies
+|
+|- KB_pipeline/          # Knowledge Base System
+|  |- kb_manager.py      # Core RAG logic
+|  |- ingest.py          # Ingestion CLI
+|  |- test_kb.py         # Testing CLI
+|  |- kb_data/           # YOUR DOCUMENTS (put files here)
+|  |- kb_store/          # Auto-generated index
+|  |- README.md          # Full manual
+|
+|- docs/                 # General docs
 ```
 
 ## Configuration Files
 
 | File | Purpose |
 |------|---------|
-| `.env` | API keys (OPENAI_API_KEY, LIVEKIT_*, etc.) |
+| `.env` | API keys (OpenAI, LiveKit, Neuphonic, etc.) |
 | `persona.yaml` | Agent name, greeting, instructions, roles |
 | `livekit.toml` | LiveKit connection settings |
 
@@ -121,12 +126,19 @@ roles:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | ✅ | OpenAI API key |
-| `LIVEKIT_URL` | ✅ | LiveKit server URL |
-| `LIVEKIT_API_KEY` | ✅ | LiveKit API key |
-| `LIVEKIT_API_SECRET` | ✅ | LiveKit API secret |
+| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `LIVEKIT_URL` | Yes | LiveKit server URL |
+| `LIVEKIT_API_KEY` | Yes | LiveKit API key |
+| `LIVEKIT_API_SECRET` | Yes | LiveKit API secret |
 | `SIMLI_API_KEY` | Optional | For avatar video |
 | `DEEPGRAM_API_KEY` | Optional | For speech-to-text |
+| `CARTESIA_API_KEY` | Yes | API token for Cartesia TTS |
+| `CARTESIA_MODEL` | Optional | Model ID (default: `sonic-3`) |
+| `CARTESIA_VOICE` | Optional | Voice ID/embedding for Cartesia TTS |
+| `CARTESIA_LANGUAGE` | Optional | Language code (default: `en`) |
+| `CARTESIA_EMOTION` | Optional | Emotion (model-dependent) |
+| `CARTESIA_SPEED` | Optional | Speech speed (default: `1.0`) |
+| `CARTESIA_VOLUME` | Optional | Speech volume (default: `1.0`) |
 | `AGENT_ROLE` | Optional | Override active role |
 
 ## Running in Production

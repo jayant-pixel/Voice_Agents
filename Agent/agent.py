@@ -25,13 +25,13 @@ from livekit.plugins import (
     openai,
     silero,
     simli,
+    cartesia,
     noise_cancellation,
 )
 
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-# Custom TTS & KB Manager
-from chatterbox_plugin.chatterbox_tts import ChatterboxTTS
+# KB Manager
 from KB_pipeline.kb_search import kb_searcher as kb_manager
 
 # -------------------------
@@ -653,9 +653,37 @@ async def entrypoint(ctx: JobContext):
     simli_api_key = os.getenv("SIMLI_API_KEY")
     simli_face_id = os.getenv("SIMLI_FACE_ID")
 
+    cartesia_api_key = os.getenv("CARTESIA_API_KEY")
+    cartesia_model = os.getenv("CARTESIA_MODEL")
+    cartesia_voice = os.getenv("CARTESIA_VOICE")
+    cartesia_language = os.getenv("CARTESIA_LANGUAGE")
+    cartesia_emotion = os.getenv("CARTESIA_EMOTION")
+    cartesia_speed = os.getenv("CARTESIA_SPEED")
+    cartesia_volume = os.getenv("CARTESIA_VOLUME")
+
     if not simli_api_key or not simli_face_id:
         logger.error("SIMLI_API_KEY or SIMLI_FACE_ID missing")
         return
+
+    if not cartesia_api_key:
+        logger.error("CARTESIA_API_KEY missing")
+        return
+
+    parsed_speed = None
+    if cartesia_speed:
+        try:
+            parsed_speed = float(cartesia_speed)
+        except ValueError:
+            logger.warning("Invalid CARTESIA_SPEED provided, ignoring")
+            parsed_speed = None
+
+    parsed_volume = None
+    if cartesia_volume:
+        try:
+            parsed_volume = float(cartesia_volume)
+        except ValueError:
+            logger.warning("Invalid CARTESIA_VOLUME provided, ignoring")
+            parsed_volume = None
 
     avatar = simli.AvatarSession(
         simli_config=simli.SimliConfig(api_key=simli_api_key, face_id=simli_face_id),
@@ -665,11 +693,14 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         stt=deepgram.STTv2(model="flux-general-en", eager_eot_threshold=0.4),
         llm=openai.LLM(model="gpt-4.1-mini-2025-04-14"),
-        tts=ChatterboxTTS(
-            api_url="https://jayant--chatterbox-tts-ttsservice-api.modal.run",
-            voice="anaya_en_female",
-            language="en",
-            style="general",
+        tts=cartesia.TTS(
+            api_key=cartesia_api_key,
+            **({"model": cartesia_model} if cartesia_model else {}),
+            **({"voice": cartesia_voice} if cartesia_voice else {}),
+            **({"language": cartesia_language} if cartesia_language else {}),
+            **({"emotion": cartesia_emotion} if cartesia_emotion else {}),
+            **({"speed": parsed_speed} if parsed_speed is not None else {}),
+            **({"volume": parsed_volume} if parsed_volume is not None else {}),
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],

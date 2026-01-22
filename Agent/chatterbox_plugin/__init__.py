@@ -2,14 +2,12 @@
 
 from .chatterbox_tts import (
     ChatterboxTTS,
-    SynthesizeStream,
     list_voices,
     list_languages,
 )
 
 __all__ = [
     "ChatterboxTTS",
-    "SynthesizeStream",
     "list_voices",
     "list_languages",
 ]
