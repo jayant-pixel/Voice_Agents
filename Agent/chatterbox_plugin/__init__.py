@@ -2,7 +2,6 @@
 
 from .chatterbox_tts import (
     ChatterboxTTS,
-    ChunkedStream,
     SynthesizeStream,
     list_voices,
     list_languages,
@@ -10,7 +9,6 @@ from .chatterbox_tts import (
 
 __all__ = [
     "ChatterboxTTS",
-    "ChunkedStream", 
     "SynthesizeStream",
     "list_voices",
     "list_languages",
