@@ -48,7 +48,7 @@ def load_persona():
     if not persona_path.exists():
         raise FileNotFoundError(f"CRITICAL: {persona_path} not found. Agent requires a persona configuration.")
     
-    with open(persona_path, "r") as f:
+    with open(persona_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
     
     role_key = os.getenv("AGENT_ROLE", config.get("active_role"))
@@ -69,6 +69,15 @@ def load_persona():
     )
 
 NAME, GREETING, INSTRUCTIONS, SYSTEM_GUIDELINES = load_persona()
+
+# -------------------------
+# SESSION CONTEXT
+# -------------------------
+_session_context = {
+    "machine_id": None,
+    "product_variant": None,
+    "compound_type": None,
+}
 
 # -------------------------
 # OVERLAY HELPER FUNCTIONS
@@ -164,8 +173,225 @@ async def knowledge_lookup(
         return f"Error searching knowledge base: {str(e)}"
 
 # -------------------------
-# OVERLAY TOOLS - NEW SPEC
+# SESSION CONTEXT TOOL
 # -------------------------
+
+@llm.function_tool
+async def set_machine_context(
+    machine_id: str,
+    product_variant: str = "",
+    compound_type: str = ""
+) -> str:
+    """
+    Store machine and product context for the session.
+    Use this when operator mentions their machine, product, or compound.
+    
+    Args:
+        machine_id: Machine identifier (e.g., "Machine 3", "Rosendahl Line 1")
+        product_variant: Product variant being produced (e.g., "25mm heating cable")
+        compound_type: Compound being used (e.g., "ETFE", "PFA", "PA11")
+    
+    Returns:
+        Confirmation of stored context
+    """
+    global _session_context
+    _session_context["machine_id"] = machine_id
+    if product_variant:
+        _session_context["product_variant"] = product_variant
+    if compound_type:
+        _session_context["compound_type"] = compound_type
+    
+    response = f"Context set: Machine {machine_id}"
+    if product_variant:
+        response += f", variant {product_variant}"
+    if compound_type:
+        response += f", compound {compound_type}"
+    
+    logger.info(f"Session context updated: {_session_context}")
+    return response
+
+# -------------------------
+# THERMOPADS OVERLAY TOOLS
+# -------------------------
+
+@llm.function_tool
+async def show_ddr_table(
+    wire_size: str,
+    die_id: str,
+    nozzle_od: str,
+    nozzle_id: str,
+    thickness: str,
+    source_doc: str = "Chart-3"
+) -> str:
+    """
+    Display the DDR table with the matching row highlighted.
+    Use this for die/nozzle/wire size queries - this is the Trust Moment visual.
+    The data comes from knowledge_lookup - call that first to get the values.
+    
+    Args:
+        wire_size: Wire size range (e.g., "0.3-0.35")
+        die_id: Die ID value from KB (e.g., "9 or 10")
+        nozzle_od: Nozzle outer diameter from KB (e.g., "4.5")
+        nozzle_id: Nozzle inner diameter from KB (e.g., "0.8 or 1")
+        thickness: Insulation thickness from KB (e.g., "0.32")
+        source_doc: Source document reference
+    
+    Returns:
+        Confirmation message
+    """
+    try:
+        # Display the specific values retrieved from KB
+        data = {
+            "columns": ["Parameter", "Value"],
+            "rows": [
+                {"Parameter": "Wire Size", "Value": wire_size},
+                {"Parameter": "Die ID", "Value": die_id},
+                {"Parameter": "Nozzle OD", "Value": nozzle_od},
+                {"Parameter": "Nozzle ID", "Value": nozzle_id},
+                {"Parameter": "Thickness", "Value": f"{thickness} mm"},
+            ],
+            "analysis": f"DDR settings for wire size {wire_size}mm as per {source_doc}"
+        }
+        
+        success = await send_overlay(
+            layout_type="comparison-table",
+            title="DDR Settings from Chart-3",
+            data=data,
+            context=f"Wire Size: {wire_size}mm",
+            source=f"{source_doc}, Issue/Rev 03/005"
+        )
+        
+        if success:
+            return f"DDR table displayed. For wire size {wire_size}, use Die ID {die_id}, Nozzle OD {nozzle_od}, Nozzle ID {nozzle_id}, thickness {thickness}mm."
+        else:
+            return f"Failed to show table. For wire size {wire_size}, use Die ID {die_id}, Nozzle OD {nozzle_od}, Nozzle ID {nozzle_id}, thickness {thickness}mm as per Chart-3."
+        
+    except Exception as e:
+        logger.error(f"DDR table overlay error: {e}")
+        return f"Error displaying DDR table: {str(e)}"
+
+
+@llm.function_tool
+async def show_temperature_profile(
+    compound: str,
+    z1_temp: str,
+    z2_temp: str,
+    z3_temp: str,
+    z4_temp: str,
+    die_temp: str,
+    water_temp: str = "40",
+    tolerance: str = "plus or minus 20 degrees Celsius",
+    source_doc: str = "TPL/TD/28"
+) -> str:
+    """
+    Display temperature profile with all zones for a specific compound.
+    Use this when operator asks about temperature settings for a material.
+    The temperature values should come from knowledge_lookup first.
+    
+    Args:
+        compound: Compound type (e.g., "PFA", "ETFE", "PA11")
+        z1_temp: Zone 1 temperature from KB (e.g., "320")
+        z2_temp: Zone 2 temperature from KB (e.g., "350")
+        z3_temp: Zone 3 temperature from KB (e.g., "365")
+        z4_temp: Zone 4 temperature from KB (e.g., "370")
+        die_temp: Die temperature from KB (e.g., "390")
+        water_temp: Water cooling temperature from KB (e.g., "40")
+        tolerance: Temperature tolerance from KB
+        source_doc: Source document reference
+    
+    Returns:
+        Confirmation message
+    """
+    try:
+        data = {
+            "zones": [
+                {"name": "Z1", "value": f"{z1_temp} C"},
+                {"name": "Z2", "value": f"{z2_temp} C"},
+                {"name": "Z3", "value": f"{z3_temp} C"},
+                {"name": "Z4", "value": f"{z4_temp} C"},
+                {"name": "Die", "value": f"{die_temp} C"},
+            ],
+            "auxiliary": [
+                f"Water Cooling: {water_temp} C (plus or minus 10 C)",
+                f"Tolerance: {tolerance} for all zones"
+            ],
+            "notes": []
+        }
+        
+        # Add PFA-specific note about water cooling
+        if compound.upper() == "PFA":
+            data["notes"].append("WARNING: PFA - Do NOT use water cooling during extrusion")
+        
+        success = await send_overlay(
+            layout_type="parameter-grid",
+            title=f"{compound.upper()} Temperature Profile",
+            data=data,
+            context=f"Compound: {compound.upper()}",
+            source=f"{source_doc}, Section TPL/TD/28"
+        )
+        
+        if success:
+            return f"{compound.upper()} temperature profile displayed on screen."
+        else:
+            return f"For {compound.upper()}: Z1={z1_temp}C, Z2={z2_temp}C, Z3={z3_temp}C, Z4={z4_temp}C, Die={die_temp}C. Water temp {water_temp}C. Tolerance {tolerance}."
+        
+    except Exception as e:
+        logger.error(f"Temperature profile overlay error: {e}")
+        return f"Error displaying temperature profile: {str(e)}"
+
+
+@llm.function_tool
+async def show_safety_alert(
+    warning: str,
+    dos_json: str = "",
+    donts_json: str = "",
+    reference: str = "TPL/WI/P/15"
+) -> str:
+    """
+    Display a safety alert with do's and don'ts from work instructions.
+    Use this for safety-related queries, spark testing, PPE requirements, etc.
+    The content should come from knowledge_lookup first.
+    
+    Args:
+        warning: Main warning message (e.g., "Spark tester must be ON during production")
+        dos_json: JSON array of do's. Example: ["Check spark tester ON", "Use standard tools"]
+        donts_json: JSON array of don'ts. Example: ["Don't produce without spark test", "Don't use sharp blades"]
+        reference: Document reference (e.g., "TPL/WI/P/15, Section 5")
+    
+    Returns:
+        Confirmation message
+    """
+    try:
+        dos = json.loads(dos_json) if dos_json else []
+        donts = json.loads(donts_json) if donts_json else []
+        
+        data = {
+            "warning": warning,
+            "dos": dos[:5],
+            "donts": donts[:5],
+            "reference": reference
+        }
+        
+        success = await send_overlay(
+            layout_type="alert-information",
+            title="Safety Alert",
+            data=data,
+            context="Work Instruction Safety Guidelines",
+            source=reference
+        )
+        
+        if success:
+            return "Safety alert displayed on screen."
+        else:
+            return f"IMPORTANT: {warning}. Please refer to {reference} for complete safety guidelines."
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in safety alert: {e}")
+        return "Error: Invalid data format for safety alert"
+    except Exception as e:
+        logger.error(f"Safety alert overlay error: {e}")
+        return f"Error displaying safety alert: {str(e)}"
+
 
 @llm.function_tool
 async def show_single_value(
@@ -183,12 +409,12 @@ async def show_single_value(
     
     Args:
         title: Header title (e.g., "Z3 Temperature")
-        value: The main value to display (e.g., "310°C")
+        value: The main value to display (e.g., "310 degrees Celsius")
         label: Label for the value (e.g., "Zone 3")
         context: Material/machine info (e.g., "Material: ETFE")
         source: Document reference (e.g., "TPL-TD-28")
-        range: Acceptable range (e.g., "290°C - 330°C")
-        tolerance: Tolerance value (e.g., "±20°C")
+        range: Acceptable range (e.g., "290 to 330 degrees Celsius")
+        tolerance: Tolerance value (e.g., "plus or minus 20 degrees Celsius")
     
     Returns:
         Confirmation message
@@ -214,333 +440,6 @@ async def show_single_value(
     except Exception as e:
         logger.error(f"Single value overlay error: {e}")
         return f"Error displaying value: {str(e)}"
-
-
-@llm.function_tool
-async def show_quick_lookup(
-    title: str,
-    wire_size: str,
-    values_json: str,
-    context: str = "",
-    source: str = "",
-    adjacent_json: str = ""
-) -> str:
-    """
-    Display a quick lookup result with die/nozzle specs.
-    Use for tooling questions like "What die for X wire?".
-    
-    Args:
-        title: Header title (e.g., "Die & Nozzle Selection")
-        wire_size: Wire size range (e.g., "0.3-0.35mm")
-        values_json: JSON object of values. Example: {"Die ID": "9 or 10", "Nozzle OD": "4.5", "Nozzle ID": "0.8 or 1"}
-        context: Additional context (e.g., "Wire Size: 0.35mm")
-        source: Document reference (e.g., "DDR Chart-3, Row 3")
-        adjacent_json: JSON array of context. Example: ["0.25-0.3mm: Same configuration", "0.35-0.4mm: Die 10"]
-    
-    Returns:
-        Confirmation message
-    """
-    try:
-        values = json.loads(values_json)
-        adjacent = json.loads(adjacent_json) if adjacent_json else []
-        
-        data = {
-            "wire_size": wire_size,
-            "values": values,
-            "adjacent": adjacent
-        }
-        
-        success = await send_overlay(
-            layout_type="quick-lookup",
-            title=title,
-            context=context,
-            source=source,
-            data=data
-        )
-        
-        return "Quick lookup displayed on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in quick lookup: {e}")
-        return "Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Quick lookup overlay error: {e}")
-        return f"Error displaying lookup: {str(e)}"
-
-
-@llm.function_tool
-async def show_range_display(
-    title: str,
-    target: str,
-    minimum: str,
-    maximum: str,
-    context: str = "",
-    source: str = "",
-    tolerance: str = "",
-    notes_json: str = ""
-) -> str:
-    """
-    Display a range/specification with target value.
-    Use for questions about acceptable ranges and tolerances.
-    
-    Args:
-        title: Header title (e.g., "Water Cooling Temperature")
-        target: Target value (e.g., "40°C")
-        minimum: Minimum acceptable (e.g., "30°C")
-        maximum: Maximum acceptable (e.g., "50°C")
-        context: Material/machine info (e.g., "Material: ETFE | Machine: ROSENDAHL")
-        source: Document reference (e.g., "TPL-TD-28")
-        tolerance: Tolerance spec (e.g., "±10°C")
-        notes_json: JSON array of notes. Example: ["Gap to Hot Water Zone: 0.5 - 1.5 meters"]
-    
-    Returns:
-        Confirmation message
-    """
-    try:
-        notes = json.loads(notes_json) if notes_json else []
-        
-        data = {
-            "target": target,
-            "minimum": minimum,
-            "maximum": maximum,
-            "tolerance": tolerance,
-            "notes": notes
-        }
-        
-        success = await send_overlay(
-            layout_type="range-display",
-            title=title,
-            context=context,
-            source=source,
-            data=data
-        )
-        
-        return "Range display shown on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in range display: {e}")
-        return "Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Range display overlay error: {e}")
-        return f"Error displaying range: {str(e)}"
-
-
-@llm.function_tool
-async def show_multi_parameter(
-    title: str,
-    parameters_json: str,
-    context: str = "",
-    source: str = "",
-    note: str = ""
-) -> str:
-    """
-    Display multiple related parameters together.
-    Use when showing 2-3 related settings (e.g., water temp AND gap distance).
-    
-    Args:
-        title: Header title (e.g., "Water System Settings")
-        parameters_json: JSON array of parameters. Example:
-            [{"name": "Water Cooling Temperature", "target": "40°C", "range": "30-50°C", "tolerance": "±10°C"},
-             {"name": "Gap Distance", "range": "0.5 - 1.5 meters"}]
-        context: Material/machine info (e.g., "Material: ETFE | ROSENDAHL")
-        source: Document reference (e.g., "TPL-TD-28")
-        note: Important note (e.g., "Water circulation must be ON during extrusion")
-    
-    Returns:
-        Confirmation message
-    """
-    try:
-        parameters = json.loads(parameters_json)
-        
-        data = {
-            "parameters": parameters[:4],  # Max 4 parameters
-            "note": note
-        }
-        
-        success = await send_overlay(
-            layout_type="multi-parameter",
-            title=title,
-            context=context,
-            source=source,
-            data=data
-        )
-        
-        return "Multi-parameter display shown on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in multi-parameter: {e}")
-        return "Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Multi-parameter overlay error: {e}")
-        return f"Error displaying parameters: {str(e)}"
-
-
-@llm.function_tool
-async def show_parameter_grid(
-    title: str,
-    zones_json: str,
-    context: str = "",
-    source: str = "",
-    auxiliary_json: str = "",
-    notes_json: str = ""
-) -> str:
-    """
-    Display temperature zones in a grid layout (2-3 columns).
-    Use for showing all temperature zones for a material/machine.
-    
-    Args:
-        title: Header title (e.g., "ETFE Temperature Profile")
-        zones_json: JSON array of zones. Example:
-            [{"name": "Z1", "value": "280°C", "range": "260-300"},
-             {"name": "Z2", "value": "290°C", "range": "270-310"}]
-        context: Machine info (e.g., "Machine: ROSENDAHL")
-        source: Document reference (e.g., "TPL-TD-28, Page 1")
-        auxiliary_json: JSON array of auxiliary settings. Example: ["Water Cooling: 40°C (±10°C)", "Tolerance: ±20°C"]
-        notes_json: JSON array of notes. Example: ["Gap Distance: 0.5-1.5 meters"]
-    
-    Returns:
-        Confirmation message
-    """
-    try:
-        zones = json.loads(zones_json)
-        auxiliary = json.loads(auxiliary_json) if auxiliary_json else []
-        notes = json.loads(notes_json) if notes_json else []
-        
-        data = {
-            "zones": zones[:9],  # Max 9 zones (3x3 grid)
-            "auxiliary": auxiliary[:6],
-            "notes": notes[:3]
-        }
-        
-        success = await send_overlay(
-            layout_type="parameter-grid",
-            title=title,
-            context=context,
-            source=source,
-            data=data
-        )
-        
-        return "Temperature grid displayed on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in parameter grid: {e}")
-        return "Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Parameter grid overlay error: {e}")
-        return f"Error displaying grid: {str(e)}"
-
-
-@llm.function_tool
-async def show_comparison_table(
-    title: str,
-    columns_json: str,
-    rows_json: str,
-    context: str = "",
-    source: str = "",
-    analysis: str = "",
-    additional_json: str = ""
-) -> str:
-    """
-    Display a comparison table for materials or parameters.
-    Use when comparing two or more materials/settings.
-    
-    Args:
-        title: Header title (e.g., "Temperature Comparison")
-        columns_json: JSON array of column headers. Example: ["Zone", "ETFE", "FEP", "Status"]
-        rows_json: JSON array of row objects. Example:
-            [{"Zone": "Z1", "ETFE": "280°C", "FEP": "280°C", "Status": "Same ✓"},
-             {"Zone": "Z2", "ETFE": "290°C", "FEP": "290°C", "Status": "Same ✓"}]
-        context: Context info (e.g., "ETFE vs FEP | Machine: ROSENDAHL")
-        source: Document reference (e.g., "TPL-TD-28")
-        analysis: Analysis text (e.g., "All temperature parameters are identical.")
-        additional_json: JSON array of notes. Example: ["ETFE: 40°C (±10°C)", "FEP: 40°C (±10°C) ✓ Same"]
-    
-    Returns:
-        Confirmation message
-    """
-    try:
-        columns = json.loads(columns_json)
-        rows = json.loads(rows_json)
-        additional = json.loads(additional_json) if additional_json else []
-        
-        data = {
-            "columns": columns[:5],  # Max 5 columns
-            "rows": rows[:10],  # Max 10 rows
-            "analysis": analysis,
-            "additional": additional[:3]
-        }
-        
-        success = await send_overlay(
-            layout_type="comparison-table",
-            title=title,
-            context=context,
-            source=source,
-            data=data
-        )
-        
-        return "Comparison table displayed on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in comparison table: {e}")
-        return "Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Comparison table overlay error: {e}")
-        return f"Error displaying comparison: {str(e)}"
-
-
-@llm.function_tool
-async def show_alert_information(
-    title: str,
-    warning: str,
-    context: str = "",
-    source: str = "",
-    donts_json: str = "",
-    dos_json: str = "",
-    reference: str = ""
-) -> str:
-    """
-    Display a safety/warning alert with critical information.
-    Use for material-specific warnings, safety limits, or restrictions.
-    
-    Args:
-        title: Header title (e.g., "Material-Specific Requirements")
-        warning: Main warning message (e.g., "DO NOT USE WATER COOLING")
-        context: Material info (e.g., "Material: PFA")
-        source: Document reference (e.g., "Inner Extrusion WI, Note 9")
-        donts_json: JSON array of don'ts. Example: ["Water circulation must be OFF", "Gap distance does not apply"]
-        dos_json: JSON array of dos. Example: ["Temperature: 320-390°C (higher)", "Pre-heater: 80-100%"]
-        reference: Reference quote (e.g., "For PFA insulation don't use water")
-    
-    Returns:
-        Confirmation message
-    """
-    try:
-        donts = json.loads(donts_json) if donts_json else []
-        dos = json.loads(dos_json) if dos_json else []
-        
-        data = {
-            "warning": warning,
-            "donts": donts[:5],
-            "dos": dos[:5],
-            "reference": reference
-        }
-        
-        success = await send_overlay(
-            layout_type="alert-information",
-            title=title,
-            context=context,
-            source=source,
-            data=data
-        )
-        
-        return "Alert displayed on screen" if success else "Failed to display overlay"
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in alert: {e}")
-        return "Error: Invalid data format"
-    except Exception as e:
-        logger.error(f"Alert overlay error: {e}")
-        return f"Error displaying alert: {str(e)}"
 
 # -------------------------
 # UTILITY TOOLS
@@ -603,36 +502,32 @@ _current_room = None
 
 class ThermopadsSupervisor(Agent):
     def __init__(self):
-        # Load system prompt from file
-        prompt_path = Path(__file__).parent / "thermopads_voice_agent_prompt.md"
-        if prompt_path.exists():
-            with open(prompt_path, "r") as f:
-                full_instructions = f.read()
-        else:
-            # Fallback to persona-based instructions
-            full_instructions = f"NAME: {NAME}\n\nCORE INSTRUCTIONS:\n{INSTRUCTIONS}\n\n--- SYSTEM GUIDELINES ---\n{SYSTEM_GUIDELINES}"
+        # Use instructions from persona.yaml
+        full_instructions = f"NAME: {NAME}\n\nCORE INSTRUCTIONS:\n{INSTRUCTIONS}\n\n--- SYSTEM GUIDELINES ---\n{SYSTEM_GUIDELINES}"
         
         super().__init__(
             instructions=full_instructions,
             tools=[
+                # Knowledge Base
                 knowledge_lookup,
+                # Session Context
+                set_machine_context,
+                # Thermopads-Specific Overlays
+                show_ddr_table,
+                show_temperature_profile,
+                show_safety_alert,
+                # Generic Overlays
                 show_single_value,
-                show_quick_lookup,
-                show_range_display,
-                show_multi_parameter,
-                show_parameter_grid,
-                show_comparison_table,
-                show_alert_information,
+                # Utility
                 hide_overlay,
                 end_call,
             ],
         )
 
     async def on_enter(self):
-        await self.session.generate_reply(
-            instructions=GREETING if GREETING else "Good morning. I am your Line Support Assistant. Tell me, which machine line are you working on?",
-            allow_interruptions=True,
-        )
+        # Use say() for instant greeting - no LLM processing needed
+        greeting_text = GREETING if GREETING else "Good morning. I am Cara, your Line Support Assistant. Tell me, which machine line are you working on today?"
+        await self.session.say(greeting_text, allow_interruptions=True)
 
 # -------------------------
 # SERVER & MAIN
@@ -649,17 +544,15 @@ async def entrypoint(ctx: JobContext):
     global _current_room
     _current_room = ctx.room
 
-    # Avatar (Simli)
+    # Avatar (Simli) - from .env
     simli_api_key = os.getenv("SIMLI_API_KEY")
     simli_face_id = os.getenv("SIMLI_FACE_ID")
 
+    # Cartesia TTS - from .env
     cartesia_api_key = os.getenv("CARTESIA_API_KEY")
-    cartesia_model = os.getenv("CARTESIA_MODEL")
+    cartesia_model = os.getenv("CARTESIA_MODEL", "sonic-2")
     cartesia_voice = os.getenv("CARTESIA_VOICE")
-    cartesia_language = os.getenv("CARTESIA_LANGUAGE")
-    cartesia_emotion = os.getenv("CARTESIA_EMOTION")
-    cartesia_speed = os.getenv("CARTESIA_SPEED")
-    cartesia_volume = os.getenv("CARTESIA_VOLUME")
+    cartesia_language = os.getenv("CARTESIA_LANGUAGE", "en")
 
     if not simli_api_key or not simli_face_id:
         logger.error("SIMLI_API_KEY or SIMLI_FACE_ID missing")
@@ -668,22 +561,6 @@ async def entrypoint(ctx: JobContext):
     if not cartesia_api_key:
         logger.error("CARTESIA_API_KEY missing")
         return
-
-    parsed_speed = None
-    if cartesia_speed:
-        try:
-            parsed_speed = float(cartesia_speed)
-        except ValueError:
-            logger.warning("Invalid CARTESIA_SPEED provided, ignoring")
-            parsed_speed = None
-
-    parsed_volume = None
-    if cartesia_volume:
-        try:
-            parsed_volume = float(cartesia_volume)
-        except ValueError:
-            logger.warning("Invalid CARTESIA_VOLUME provided, ignoring")
-            parsed_volume = None
 
     avatar = simli.AvatarSession(
         simli_config=simli.SimliConfig(api_key=simli_api_key, face_id=simli_face_id),
@@ -695,12 +572,9 @@ async def entrypoint(ctx: JobContext):
         llm=openai.LLM(model="gpt-4.1-mini-2025-04-14"),
         tts=cartesia.TTS(
             api_key=cartesia_api_key,
-            **({"model": cartesia_model} if cartesia_model else {}),
-            **({"voice": cartesia_voice} if cartesia_voice else {}),
-            **({"language": cartesia_language} if cartesia_language else {}),
-            **({"emotion": cartesia_emotion} if cartesia_emotion else {}),
-            **({"speed": parsed_speed} if parsed_speed is not None else {}),
-            **({"volume": parsed_volume} if parsed_volume is not None else {}),
+            model=cartesia_model,
+            voice=cartesia_voice,
+            language=cartesia_language,
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
@@ -728,5 +602,4 @@ async def entrypoint(ctx: JobContext):
     )
 
 if __name__ == "__main__":
-    # num_idle_processes=2 for lighter dev mode, increase for production
     cli.run_app(server)
