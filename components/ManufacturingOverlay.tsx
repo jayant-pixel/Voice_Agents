@@ -8,10 +8,6 @@ import { useState, useEffect } from "react";
 
 export type LayoutType =
     | 'single-value'
-    | 'quick-lookup'
-    | 'range-display'
-    | 'multi-parameter'
-    | 'lookup-with-context'
     | 'alert-information'
     | 'parameter-grid'
     | 'comparison-table';
@@ -27,10 +23,6 @@ export interface OverlayData {
 // Card width mapping
 const cardWidths: Record<LayoutType, string> = {
     'single-value': '350px',
-    'quick-lookup': '400px',
-    'range-display': '420px',
-    'multi-parameter': '460px',
-    'lookup-with-context': '480px',
     'alert-information': '500px',
     'parameter-grid': '550px',
     'comparison-table': '650px'
@@ -106,7 +98,7 @@ export function ManufacturingOverlay({ overlay, onDismiss }: ManufacturingOverla
                     </div>
                     <button
                         onClick={handleDismiss}
-                        className="ml-4 w-7 h-7 flex items-center justify-center bg-black text-white hover:bg-gray-800 transition-colors font-bold text-lg"
+                        className="ml-4 w-7 h-7 flex items-center justify-content bg-black text-white hover:bg-gray-800 transition-colors font-bold text-lg"
                         aria-label="Close overlay"
                     >
                         ×
@@ -139,14 +131,6 @@ function renderContent(overlay: OverlayData) {
     switch (layoutType) {
         case 'single-value':
             return <SingleValueContent data={data} />;
-        case 'quick-lookup':
-            return <QuickLookupContent data={data} />;
-        case 'range-display':
-            return <RangeDisplayContent data={data} />;
-        case 'multi-parameter':
-            return <MultiParameterContent data={data} />;
-        case 'lookup-with-context':
-            return <LookupWithContextContent data={data} />;
         case 'alert-information':
             return <AlertInformationContent data={data} />;
         case 'parameter-grid':
@@ -160,6 +144,7 @@ function renderContent(overlay: OverlayData) {
 
 // ============================================
 // LAYOUT TYPE 1: SINGLE VALUE (350px)
+// For: show_single_value tool
 // ============================================
 
 function SingleValueContent({ data }: { data: Record<string, unknown> }) {
@@ -199,263 +184,8 @@ function SingleValueContent({ data }: { data: Record<string, unknown> }) {
 }
 
 // ============================================
-// LAYOUT TYPE 2: QUICK LOOKUP (400px)
-// ============================================
-
-function QuickLookupContent({ data }: { data: Record<string, unknown> }) {
-    const wireSize = (data.wire_size as string) || '';
-    const values = (data.values as Record<string, string>) || {};
-    const adjacent = (data.adjacent as string[]) || [];
-
-    return (
-        <div className="space-y-4">
-            {wireSize && (
-                <p className="text-sm text-gray-600">
-                    Wire Size: <span className="font-semibold text-black">{wireSize}</span>
-                </p>
-            )}
-
-            {/* Main values box */}
-            <div
-                className="bg-white p-4 border border-black"
-                style={{ boxShadow: '3px 3px 0px 0px #000' }}
-            >
-                {Object.entries(values).map(([key, val]) => (
-                    <div key={key} className="py-2 border-b border-gray-200 last:border-b-0">
-                        <span className="font-semibold text-black">{key}:</span>{' '}
-                        <span className="text-gray-700">{val}</span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Adjacent info */}
-            {adjacent.length > 0 && (
-                <div>
-                    <p
-                        className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
-                        style={{ fontFamily: 'monospace' }}
-                    >
-                        Adjacent Wire Sizes:
-                    </p>
-                    <ul className="space-y-1">
-                        {adjacent.map((item, idx) => (
-                            <li key={idx} className="text-sm text-gray-600 flex items-start">
-                                <span className="mr-2">•</span>
-                                <span>{item}</span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ============================================
-// LAYOUT TYPE 3: RANGE DISPLAY (420px)
-// ============================================
-
-function RangeDisplayContent({ data }: { data: Record<string, unknown> }) {
-    const target = (data.target as string) || '';
-    const minimum = (data.minimum as string) || '';
-    const maximum = (data.maximum as string) || '';
-    const tolerance = (data.tolerance as string) || '';
-    const notes = (data.notes as string[]) || [];
-
-    return (
-        <div className="space-y-4">
-            {/* Target */}
-            <div className="text-center">
-                <p
-                    className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1"
-                    style={{ fontFamily: 'monospace' }}
-                >
-                    Target Temperature
-                </p>
-                <p className="text-4xl font-extrabold text-black">{target}</p>
-            </div>
-
-            {/* Range box */}
-            <div
-                className="bg-white p-4 border border-black"
-                style={{ boxShadow: '3px 3px 0px 0px #000' }}
-            >
-                <p
-                    className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3"
-                    style={{ fontFamily: 'monospace' }}
-                >
-                    Acceptable Range
-                </p>
-                <div className="space-y-2">
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Minimum:</span>
-                        <span className="text-sm font-semibold text-black">{minimum}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Target:</span>
-                        <span className="text-sm font-semibold text-black">{target} ← Standard</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Maximum:</span>
-                        <span className="text-sm font-semibold text-black">{maximum}</span>
-                    </div>
-                </div>
-            </div>
-
-            {tolerance && (
-                <p className="text-sm text-gray-600 text-center">
-                    Tolerance: <span className="font-semibold">{tolerance}</span>
-                </p>
-            )}
-
-            {/* Notes */}
-            {notes.length > 0 && notes.map((note, idx) => (
-                <p key={idx} className="text-sm text-gray-600">{note}</p>
-            ))}
-        </div>
-    );
-}
-
-// ============================================
-// LAYOUT TYPE 4: MULTI-PARAMETER (460px)
-// ============================================
-
-function MultiParameterContent({ data }: { data: Record<string, unknown> }) {
-    const parameters = (data.parameters as Array<{
-        name: string;
-        target?: string;
-        range?: string;
-        tolerance?: string;
-    }>) || [];
-    const note = (data.note as string) || '';
-
-    return (
-        <div className="space-y-4">
-            {parameters.map((param, idx) => (
-                <div
-                    key={idx}
-                    className="bg-white p-4 border border-black"
-                    style={{ boxShadow: '3px 3px 0px 0px #000' }}
-                >
-                    <p
-                        className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2"
-                        style={{ fontFamily: 'monospace' }}
-                    >
-                        {param.name}
-                    </p>
-                    {param.target && (
-                        <p className="text-sm">
-                            <span className="text-gray-600">Target:</span>{' '}
-                            <span className="font-semibold text-black">{param.target}</span>
-                        </p>
-                    )}
-                    {param.range && (
-                        <p className="text-sm">
-                            <span className="text-gray-600">Range:</span>{' '}
-                            <span className="font-semibold text-black">{param.range}</span>
-                        </p>
-                    )}
-                    {param.tolerance && (
-                        <p className="text-sm">
-                            <span className="text-gray-600">Tolerance:</span>{' '}
-                            <span className="font-semibold text-black">{param.tolerance}</span>
-                        </p>
-                    )}
-                </div>
-            ))}
-
-            {note && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3">
-                    <p className="text-sm text-gray-800 font-medium">{note}</p>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ============================================
-// LAYOUT TYPE 5: LOOKUP WITH CONTEXT (480px)
-// ============================================
-
-function LookupWithContextContent({ data }: { data: Record<string, unknown> }) {
-    const wireSize = (data.wire_size as string) || '';
-    const main = (data.main as Record<string, string>) || {};
-    const previous = (data.previous as { range: string; values: Record<string, string> }) || null;
-    const next = (data.next as { range: string; values: Record<string, string> }) || null;
-    const note = (data.note as string) || '';
-
-    return (
-        <div className="space-y-4">
-            {wireSize && (
-                <p className="text-sm text-gray-600">
-                    Wire Size: <span className="font-semibold text-black">{wireSize}</span>
-                </p>
-            )}
-
-            {/* Main values box */}
-            <div
-                className="bg-white p-4 border border-black"
-                style={{ boxShadow: '3px 3px 0px 0px #000' }}
-            >
-                {Object.entries(main).map(([key, val]) => (
-                    <div key={key} className="py-2 border-b border-gray-200 last:border-b-0">
-                        <span className="font-semibold text-black">{key}:</span>{' '}
-                        <span className="text-gray-700">{val}</span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Adjacent wire sizes */}
-            <div>
-                <p
-                    className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3"
-                    style={{ fontFamily: 'monospace' }}
-                >
-                    Adjacent Wire Sizes:
-                </p>
-
-                {previous && (
-                    <div className="mb-3">
-                        <p className="text-sm font-semibold text-gray-700 mb-1">
-                            Previous ({previous.range}):
-                        </p>
-                        <ul className="space-y-1 ml-4">
-                            {Object.entries(previous.values).map(([k, v]) => (
-                                <li key={k} className="text-sm text-gray-600">
-                                    • {k}: {v}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                {next && (
-                    <div>
-                        <p className="text-sm font-semibold text-gray-700 mb-1">
-                            Next ({next.range}):
-                        </p>
-                        <ul className="space-y-1 ml-4">
-                            {Object.entries(next.values).map(([k, v]) => (
-                                <li key={k} className="text-sm text-gray-600">
-                                    • {k}: {v}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-            </div>
-
-            {note && (
-                <div className="bg-pink-50 border-l-4 p-3" style={{ borderColor: '#FF0055' }}>
-                    <p className="text-sm text-gray-800">💡 {note}</p>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ============================================
-// LAYOUT TYPE 6: ALERT INFORMATION (500px)
+// LAYOUT TYPE 2: ALERT INFORMATION (500px)
+// For: show_safety_alert tool
 // ============================================
 
 function AlertInformationContent({ data }: { data: Record<string, unknown> }) {
@@ -489,7 +219,7 @@ function AlertInformationContent({ data }: { data: Record<string, unknown> }) {
             {/* Don'ts */}
             {donts.length > 0 && (
                 <div className="mb-4">
-                    <p className="text-sm font-bold text-black mb-2">Critical Differences:</p>
+                    <p className="text-sm font-bold text-black mb-2">DON&apos;Ts:</p>
                     {donts.map((item, idx) => (
                         <div key={idx} className="py-1.5 text-sm text-black flex items-start">
                             <span className="mr-2 font-bold">❌</span>
@@ -502,6 +232,7 @@ function AlertInformationContent({ data }: { data: Record<string, unknown> }) {
             {/* Dos */}
             {dos.length > 0 && (
                 <div className="mb-4">
+                    <p className="text-sm font-bold text-black mb-2">DO&apos;s:</p>
                     {dos.map((item, idx) => (
                         <div key={idx} className="py-1.5 text-sm text-black flex items-start">
                             <span className="mr-2 font-bold">✅</span>
@@ -514,7 +245,7 @@ function AlertInformationContent({ data }: { data: Record<string, unknown> }) {
             {/* Reference note */}
             {reference && (
                 <p className="text-sm text-gray-600 italic mt-4">
-                    Reference: "{reference}"
+                    Reference: &quot;{reference}&quot;
                 </p>
             )}
         </div>
@@ -522,7 +253,8 @@ function AlertInformationContent({ data }: { data: Record<string, unknown> }) {
 }
 
 // ============================================
-// LAYOUT TYPE 7: PARAMETER GRID (550px)
+// LAYOUT TYPE 3: PARAMETER GRID (550px)
+// For: show_temperature_profile tool
 // ============================================
 
 function ParameterGridContent({ data }: { data: Record<string, unknown> }) {
@@ -546,7 +278,7 @@ function ParameterGridContent({ data }: { data: Record<string, unknown> }) {
                 className="text-xs font-bold text-gray-500 uppercase tracking-wide"
                 style={{ fontFamily: 'monospace' }}
             >
-                Zone Temperatures (°C):
+                Zone Temperatures:
             </p>
 
             {/* Grid rows */}
@@ -603,14 +335,15 @@ function ParameterGridContent({ data }: { data: Record<string, unknown> }) {
 }
 
 // ============================================
-// LAYOUT TYPE 8: COMPARISON TABLE (650px)
+// LAYOUT TYPE 4: COMPARISON TABLE (650px)
+// For: show_ddr_table tool
 // ============================================
 
 function ComparisonTableContent({ data }: { data: Record<string, unknown> }) {
     const columns = (data.columns as string[]) || [];
     const rows = (data.rows as Array<Record<string, string>>) || [];
     const analysis = (data.analysis as string) || '';
-    const additional = (data.additional as string[]) || [];
+    const highlightedRow = (data.highlighted_row as number) ?? -1;
 
     return (
         <div className="space-y-4">
@@ -639,7 +372,14 @@ function ComparisonTableContent({ data }: { data: Record<string, unknown> }) {
                     </thead>
                     <tbody className="bg-white">
                         {rows.map((row, rowIdx) => (
-                            <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                            <tr
+                                key={rowIdx}
+                                className={
+                                    rowIdx === highlightedRow
+                                        ? 'bg-pink-100 font-bold'
+                                        : rowIdx % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                                }
+                            >
                                 {columns.map((col, colIdx) => (
                                     <td
                                         key={colIdx}
@@ -653,15 +393,6 @@ function ComparisonTableContent({ data }: { data: Record<string, unknown> }) {
                     </tbody>
                 </table>
             </div>
-
-            {/* Additional info */}
-            {additional.length > 0 && (
-                <div>
-                    {additional.map((item, idx) => (
-                        <p key={idx} className="text-sm text-gray-700 mb-1">• {item}</p>
-                    ))}
-                </div>
-            )}
 
             {/* Analysis */}
             {analysis && (
