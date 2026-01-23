@@ -45,3 +45,5 @@ next-env.d.ts
 
 # map folder (standalone demo)
 /map/
+thermopads_implementation_plan.md
+system_architecture_deep_dive.md
