@@ -50,3 +50,10 @@ system_architecture_deep_dive.md
 
 # Agent config
 Agent/livekit.toml
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Turbo cache
+.turbo/
