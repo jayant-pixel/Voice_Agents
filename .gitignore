@@ -47,3 +47,6 @@ next-env.d.ts
 /map/
 thermopads_implementation_plan.md
 system_architecture_deep_dive.md
+
+# Agent config
+Agent/livekit.toml

@@ -20,3 +20,10 @@ build/
 .vscode/
 *.log
 livekit-widget.html
+
+# Additional exclusions
+README.md
+docs/
+KMS/
+chatterbox_plugin/
+.env.example
