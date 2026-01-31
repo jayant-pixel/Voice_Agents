@@ -81,7 +81,7 @@ export default function Home() {
           <div className="support-design-box bn">
             <div className="media-wrap">
               <div className="win-dot is-square"></div>
-              <p className="text-size-tiny text-type-raster">SAY HI CARA</p>
+              <p className="text-size-tiny text-type-raster">THERMOPADS LINE SUPPORT</p>
             </div>
           </div>
         </div>
@@ -98,7 +98,7 @@ export default function Home() {
             {/* Content */}
             <div className="tab-short-wrap">
               <div className="text-size-large font-secondary">
-                <em>So basically</em>
+                <em>Tharun - Line Support</em>
               </div>
               <div className="tab-short-lines">
                 <svg width="100%" height="5" viewBox="0 0 130 5" fill="none">
@@ -106,13 +106,13 @@ export default function Home() {
                 </svg>
               </div>
               <p className="text-size-tiny">
-                I'm kind of like the older sister you never had. Let's talk about whatever's on your mind. I'll be here.
+                Your AI-powered manufacturing support assistant for Thermopads wire extrusion lines. Voice-first technical guidance with visual overlays.
               </p>
             </div>
 
             <div className="conversation-wrap">
               <div className="text-size-large font-secondary">
-                <em>Integrations</em>
+                <em>Capabilities</em>
               </div>
               <div className="tab-short-lines">
                 <svg width="100%" height="5" viewBox="0 0 473 5" fill="none">
@@ -122,16 +122,20 @@ export default function Home() {
 
               <div className="conversation-grid">
                 <div className="conversation-content">
-                  <p className="home-tabs-heading-text">EMAIL</p>
-                  <p className="home-tabs-text text-size-tiny">Inbox zero, finally.</p>
+                  <p className="home-tabs-heading-text">VISUAL DISPLAY</p>
+                  <p className="home-tabs-text text-size-tiny">On-screen data overlays.</p>
                 </div>
                 <div className="conversation-content">
-                  <p className="home-tabs-heading-text">CALENDAR</p>
-                  <p className="home-tabs-text text-size-tiny">Scheduling made sane.</p>
+                  <p className="home-tabs-heading-text">KB SUPPORT</p>
+                  <p className="home-tabs-text text-size-tiny">Technical docs at your voice.</p>
                 </div>
                 <div className="conversation-content">
-                  <p className="home-tabs-heading-text">TODO</p>
-                  <p className="home-tabs-text text-size-tiny">Tasks, managed.</p>
+                  <p className="home-tabs-heading-text">SAFETY</p>
+                  <p className="home-tabs-text text-size-tiny">Compliance & safety checks.</p>
+                </div>
+                <div className="conversation-content">
+                  <p className="home-tabs-heading-text">DIAGNOSTICS</p>
+                  <p className="home-tabs-text text-size-tiny">Guided troubleshooting.</p>
                 </div>
               </div>
             </div>
@@ -140,10 +144,13 @@ export default function Home() {
           {/* RIGHT CONTENT AREA */}
           <div className="tabs-content-wrapper">
             <div className="hudson-video-wrap">
-              {/* Persona Static Image as Background */}
-              <img
-                src="https://lab.anam.ai/persona_thumbnails/cara_windowsofa.png"
-                alt="Cara"
+              {/* Persona Video as Background */}
+              <video
+                src="https://storage.googleapis.com/simliai2.appspot.com/videos/7e74d6e7-d559-4394-bd56-4923a3ab75ad.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="persona-image"
               />
 
